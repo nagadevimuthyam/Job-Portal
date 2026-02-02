@@ -110,6 +110,13 @@ export const candidateProfileApi = baseApi.injectEndpoints({
       },
       invalidatesTags: ["CandidateProfile"],
     }),
+    deleteResume: builder.mutation({
+      query: () => ({
+        url: "/api/candidate/profile/resume/",
+        method: "DELETE",
+      }),
+      invalidatesTags: ["CandidateProfile"],
+    }),
   }),
 });
 
@@ -128,4 +135,5 @@ export const {
   useUpdateProjectMutation,
   useDeleteProjectMutation,
   useUploadResumeMutation,
+  useDeleteResumeMutation,
 } = candidateProfileApi;

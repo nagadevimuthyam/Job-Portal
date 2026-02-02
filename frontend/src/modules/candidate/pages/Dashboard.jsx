@@ -26,6 +26,7 @@ import {
   useUpdateProjectMutation,
   useDeleteProjectMutation,
   useUploadResumeMutation,
+  useDeleteResumeMutation,
 } from "../../../features/candidate/candidateProfileApi";
 
 const parseOptionalInt = (value) => (value === "" || value === null ? null : Number(value));
@@ -50,7 +51,8 @@ export default function CandidateDashboard() {
   const [createProject] = useCreateProjectMutation();
   const [updateProject] = useUpdateProjectMutation();
   const [deleteProject] = useDeleteProjectMutation();
-  const [uploadResume] = useUploadResumeMutation();
+  const [uploadResume, { isLoading: isUploadingResume }] = useUploadResumeMutation();
+  const [deleteResume, { isLoading: isDeletingResume }] = useDeleteResumeMutation();
 
   const [activeSection, setActiveSection] = useState(null);
   const [resumeFile, setResumeFile] = useState(null);
@@ -121,6 +123,19 @@ export default function CandidateDashboard() {
 
   const handleQuickLink = (id) => {
     sectionRefs[id]?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const handleResumeFileChange = (file) => {
+    if (!file) {
+      setResumeFile(null);
+      return;
+    }
+    const maxBytes = 2 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      toast.error("Resume must be 2MB or smaller.");
+      return;
+    }
+    setResumeFile(file);
   };
 
   const handleSavePersonal = async () => {
@@ -331,6 +346,20 @@ export default function CandidateDashboard() {
     }
   };
 
+  const handleDeleteResume = async () => {
+    const confirmed = window.confirm("Delete this resume? This action cannot be undone.");
+    if (!confirmed) {
+      return;
+    }
+    try {
+      await deleteResume().unwrap();
+      toast.success("Resume deleted.");
+      setActiveSection(null);
+    } catch (err) {
+      toast.error("Unable to delete resume.");
+    }
+  };
+
   if (isLoading) {
     return <Skeleton className="h-64 w-full" />;
   }
@@ -396,13 +425,18 @@ export default function CandidateDashboard() {
           <div ref={sectionRefs.resume}>
             <ResumeSection
               resumeUrl={profile?.resume_url}
+              resumeFilename={profile?.resume_filename}
+              lastUpdated={profile?.last_updated}
               selectedFile={resumeFile}
-              onFileChange={setResumeFile}
+              onFileChange={handleResumeFileChange}
+              onDelete={handleDeleteResume}
               isEditing={activeSection === "resume"}
               isLocked={isLocked("resume")}
               onEdit={() => beginSectionEdit("resume")}
               onCancel={() => cancelSectionEdit("resume")}
               onSave={handleSaveResume}
+              isUploading={isUploadingResume}
+              isDeleting={isDeletingResume}
             />
           </div>
 
