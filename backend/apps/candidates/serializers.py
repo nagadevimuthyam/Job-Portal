@@ -42,6 +42,7 @@ class CandidateRegisterSerializer(serializers.Serializer):
 
 class CandidateProfileSerializer(serializers.ModelSerializer):
     resume_url = serializers.SerializerMethodField()
+    resume_filename = serializers.SerializerMethodField()
     last_updated = serializers.DateTimeField(source="updated_at", read_only=True)
 
     class Meta:
@@ -59,6 +60,7 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
             "expected_salary",
             "resume_file",
             "resume_url",
+            "resume_filename",
             "last_updated",
         )
 
@@ -69,6 +71,11 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
         if obj.resume_file:
             return obj.resume_file.url
         return ""
+
+    def get_resume_filename(self, obj):
+        if not obj.resume_file:
+            return ""
+        return obj.resume_file.name.split("/")[-1]
 
 
 class CandidateProfileUpdateSerializer(serializers.ModelSerializer):

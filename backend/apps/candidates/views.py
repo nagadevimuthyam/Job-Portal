@@ -228,3 +228,11 @@ class CandidateResumeUploadView(APIView):
         profile.resume_file = file_obj
         profile.save(update_fields=["resume_file", "updated_at"])
         return Response(CandidateProfileSerializer(profile, context={"request": request}).data)
+
+    def delete(self, request):
+        profile = get_object_or_404(CandidateProfile, user=request.user)
+        if profile.resume_file:
+            profile.resume_file.delete(save=False)
+        profile.resume_file = None
+        profile.save(update_fields=["resume_file", "updated_at"])
+        return Response(CandidateProfileSerializer(profile, context={"request": request}).data)
