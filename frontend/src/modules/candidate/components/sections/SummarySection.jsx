@@ -1,16 +1,34 @@
+﻿import { memo, useEffect, useState } from "react";
+import { toast } from "sonner";
 import ProfileSectionCard from "../ProfileSectionCard";
 import SectionActions from "./SectionActions";
+import { useUpdateProfileMutation } from "../../../../features/candidate/candidateProfileApi";
 
-export default function SummarySection({
-  summary,
-  draft,
-  onChange,
-  isEditing,
-  isLocked,
-  onEdit,
-  onCancel,
-  onSave,
-}) {
+function SummarySection({ summary, isEditing, isLocked, onEdit, onClose }) {
+  const [draft, setDraft] = useState("");
+  const [updateProfile, { isLoading }] = useUpdateProfileMutation();
+
+  useEffect(() => {
+    if (isEditing) {
+      setDraft(summary || "");
+    }
+  }, [isEditing, summary]);
+
+  const handleSave = async () => {
+    try {
+      await updateProfile({ summary: draft }).unwrap();
+      toast.success("Summary updated.");
+      onClose();
+    } catch (err) {
+      toast.error("Unable to update summary.");
+    }
+  };
+
+  const handleCancel = () => {
+    setDraft(summary || "");
+    onClose();
+  };
+
   return (
     <ProfileSectionCard
       title="Summary"
@@ -20,9 +38,9 @@ export default function SummarySection({
           isEditing={isEditing}
           isLocked={isLocked}
           onEdit={onEdit}
-          onCancel={onCancel}
-          onSave={onSave}
-          saveLabel="Save Summary"
+          onCancel={handleCancel}
+          onSave={handleSave}
+          saveLabel={isLoading ? "Saving..." : "Save Summary"}
         />
       }
     >
@@ -32,7 +50,7 @@ export default function SummarySection({
           <textarea
             rows={4}
             value={draft}
-            onChange={(event) => onChange(event.target.value)}
+            onChange={(event) => setDraft(event.target.value)}
             className="mt-1 w-full rounded-xl border border-surface-3 bg-surface-inverse px-3 py-2.5 text-sm text-ink shadow-sm focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-200"
             placeholder="Write 2-3 lines about your strengths and achievements."
           />
@@ -45,3 +63,5 @@ export default function SummarySection({
     </ProfileSectionCard>
   );
 }
+
+export default memo(SummarySection);

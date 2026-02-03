@@ -1,17 +1,96 @@
+﻿import { memo, useEffect, useState } from "react";
+import { toast } from "sonner";
 import ProfileSectionCard from "../ProfileSectionCard";
 import SectionActions from "./SectionActions";
 import Input from "../../../../components/ui/Input";
+import { useUpdateProfileMutation } from "../../../../features/candidate/candidateProfileApi";
 
-export default function PersonalDetailsSection({
-  profile,
-  draft,
-  setDraft,
+const parseOptionalInt = (value) => (value === "" || value === null ? null : Number(value));
+
+function PersonalDetailsSection({
+  fullName,
+  email,
+  phone,
+  location,
+  totalExperienceYears,
+  totalExperienceMonths,
+  noticePeriodDays,
+  expectedSalary,
   isEditing,
   isLocked,
   onEdit,
-  onCancel,
-  onSave,
+  onClose,
 }) {
+  const [draft, setDraft] = useState({
+    full_name: "",
+    email: "",
+    phone: "",
+    location: "",
+    total_experience_years: 0,
+    total_experience_months: 0,
+    notice_period_days: "",
+    expected_salary: "",
+  });
+  const [updateProfile, { isLoading }] = useUpdateProfileMutation();
+
+  useEffect(() => {
+    if (isEditing) {
+      setDraft({
+        full_name: fullName || "",
+        email: email || "",
+        phone: phone || "",
+        location: location || "",
+        total_experience_years: totalExperienceYears ?? 0,
+        total_experience_months: totalExperienceMonths ?? 0,
+        notice_period_days: noticePeriodDays ?? "",
+        expected_salary: expectedSalary ?? "",
+      });
+    }
+  }, [
+    isEditing,
+    fullName,
+    email,
+    phone,
+    location,
+    totalExperienceYears,
+    totalExperienceMonths,
+    noticePeriodDays,
+    expectedSalary,
+  ]);
+
+  const handleSave = async () => {
+    try {
+      await updateProfile({
+        full_name: draft.full_name,
+        email: draft.email,
+        phone: draft.phone,
+        location: draft.location,
+        total_experience_years: Number(draft.total_experience_years || 0),
+        total_experience_months: Number(draft.total_experience_months || 0),
+        notice_period_days: parseOptionalInt(draft.notice_period_days),
+        expected_salary: parseOptionalInt(draft.expected_salary),
+      }).unwrap();
+      toast.success("Personal details updated.");
+      onClose();
+    } catch (err) {
+      toast.error("Unable to update personal details.");
+    }
+  };
+
+  const handleCancel = () => {
+    setDraft({
+      full_name: fullName || "",
+      email: email || "",
+      phone: phone || "",
+      location: location || "",
+      total_experience_years: totalExperienceYears ?? 0,
+      total_experience_months: totalExperienceMonths ?? 0,
+      notice_period_days: noticePeriodDays ?? "",
+      expected_salary: expectedSalary ?? "",
+    });
+    onClose();
+  };
+
   return (
     <ProfileSectionCard
       title="Personal Details"
@@ -21,9 +100,9 @@ export default function PersonalDetailsSection({
           isEditing={isEditing}
           isLocked={isLocked}
           onEdit={onEdit}
-          onCancel={onCancel}
-          onSave={onSave}
-          saveLabel="Save Details"
+          onCancel={handleCancel}
+          onSave={handleSave}
+          saveLabel={isLoading ? "Saving..." : "Save Details"}
         />
       }
     >
@@ -83,36 +162,36 @@ export default function PersonalDetailsSection({
         <div className="grid gap-3 text-sm md:grid-cols-2">
           <div>
             <p className="text-xs text-ink-faint">Name</p>
-            <p className="font-semibold text-ink">{profile?.full_name || "-"}</p>
+            <p className="font-semibold text-ink">{fullName || "-"}</p>
           </div>
           <div>
             <p className="text-xs text-ink-faint">Email</p>
-            <p className="font-semibold text-ink">{profile?.email || "-"}</p>
+            <p className="font-semibold text-ink">{email || "-"}</p>
           </div>
           <div>
             <p className="text-xs text-ink-faint">Phone</p>
-            <p className="font-semibold text-ink">{profile?.phone || "-"}</p>
+            <p className="font-semibold text-ink">{phone || "-"}</p>
           </div>
           <div>
             <p className="text-xs text-ink-faint">Location</p>
-            <p className="font-semibold text-ink">{profile?.location || "-"}</p>
+            <p className="font-semibold text-ink">{location || "-"}</p>
           </div>
           <div>
             <p className="text-xs text-ink-faint">Experience</p>
             <p className="font-semibold text-ink">
-              {profile?.total_experience_years || 0}y {profile?.total_experience_months || 0}m
+              {totalExperienceYears || 0}y {totalExperienceMonths || 0}m
             </p>
           </div>
           <div>
             <p className="text-xs text-ink-faint">Notice Period</p>
             <p className="font-semibold text-ink">
-              {profile?.notice_period_days ? `${profile.notice_period_days} days` : "-"}
+              {noticePeriodDays ? `${noticePeriodDays} days` : "-"}
             </p>
           </div>
           <div>
             <p className="text-xs text-ink-faint">Expected Salary</p>
             <p className="font-semibold text-ink">
-              {profile?.expected_salary ? `₹${profile.expected_salary}` : "-"}
+              {expectedSalary ? `₹${expectedSalary}` : "-"}
             </p>
           </div>
         </div>
@@ -120,3 +199,5 @@ export default function PersonalDetailsSection({
     </ProfileSectionCard>
   );
 }
+
+export default memo(PersonalDetailsSection);

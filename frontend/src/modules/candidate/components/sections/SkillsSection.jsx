@@ -1,20 +1,25 @@
-import { useState } from "react";
+﻿import { memo, useEffect, useState } from "react";
+import { toast } from "sonner";
 import ProfileSectionCard from "../ProfileSectionCard";
 import SectionActions from "./SectionActions";
 import Input from "../../../../components/ui/Input";
 import Button from "../../../../components/ui/Button";
+import {
+  useCreateSkillMutation,
+  useDeleteSkillMutation,
+} from "../../../../features/candidate/candidateProfileApi";
 
-export default function SkillsSection({
-  skills,
-  draft,
-  setDraft,
-  isEditing,
-  isLocked,
-  onEdit,
-  onCancel,
-  onSave,
-}) {
+function SkillsSection({ skills, isEditing, isLocked, onEdit, onClose }) {
+  const [draft, setDraft] = useState([]);
   const [newSkill, setNewSkill] = useState("");
+  const [createSkill] = useCreateSkillMutation();
+  const [deleteSkill] = useDeleteSkillMutation();
+
+  useEffect(() => {
+    if (isEditing) {
+      setDraft(skills.map((skill) => ({ ...skill })));
+    }
+  }, [isEditing, skills]);
 
   const handleAdd = () => {
     const value = newSkill.trim();
@@ -26,8 +31,31 @@ export default function SkillsSection({
     setNewSkill("");
   };
 
-  const handleRemove = (index) => {
+  const handleRemoveDraft = (index) => {
     setDraft(draft.filter((_, idx) => idx !== index));
+  };
+
+  const handleSave = async () => {
+    const draftIds = new Set(draft.filter((skill) => skill.id).map((skill) => skill.id));
+    const toCreate = draft.filter((skill) => !skill.id);
+    const toDelete = skills.filter((skill) => !draftIds.has(skill.id));
+
+    try {
+      await Promise.all([
+        ...toCreate.map((skill) => createSkill({ name: skill.name }).unwrap()),
+        ...toDelete.map((skill) => deleteSkill(skill.id).unwrap()),
+      ]);
+      toast.success("Skills updated.");
+      onClose();
+    } catch (err) {
+      toast.error("Unable to update skills.");
+    }
+  };
+
+  const handleCancel = () => {
+    setDraft(skills.map((skill) => ({ ...skill })));
+    setNewSkill("");
+    onClose();
   };
 
   const activeList = isEditing ? draft : skills;
@@ -41,8 +69,8 @@ export default function SkillsSection({
           isEditing={isEditing}
           isLocked={isLocked}
           onEdit={onEdit}
-          onCancel={onCancel}
-          onSave={onSave}
+          onCancel={handleCancel}
+          onSave={handleSave}
           saveLabel="Save Skills"
         />
       }
@@ -62,7 +90,7 @@ export default function SkillsSection({
                 <button
                   type="button"
                   className="text-ink-faint hover:text-ink"
-                  onClick={() => handleRemove(index)}
+                  onClick={() => handleRemoveDraft(index)}
                 >
                   ×
                 </button>
@@ -90,3 +118,5 @@ export default function SkillsSection({
     </ProfileSectionCard>
   );
 }
+
+export default memo(SkillsSection);

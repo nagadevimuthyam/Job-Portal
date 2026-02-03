@@ -1,23 +1,31 @@
-import { useMemo, useState } from "react";
+﻿import { memo, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import ProfileSectionCard from "../ProfileSectionCard";
 import SectionActions from "./SectionActions";
+import {
+  useUploadResumeMutation,
+  useDeleteResumeMutation,
+} from "../../../../features/candidate/candidateProfileApi";
 
-export default function ResumeSection({
+function ResumeSection({
   resumeUrl,
   resumeFilename,
   lastUpdated,
-  selectedFile,
-  onFileChange,
-  onDelete,
   isEditing,
   isLocked,
   onEdit,
-  onCancel,
-  onSave,
-  isUploading = false,
-  isDeleting = false,
+  onClose,
 }) {
+  const [resumeFile, setResumeFile] = useState(null);
   const [dragActive, setDragActive] = useState(false);
+  const [uploadResume, { isLoading: isUploading }] = useUploadResumeMutation();
+  const [deleteResume, { isLoading: isDeleting }] = useDeleteResumeMutation();
+
+  useEffect(() => {
+    if (isEditing) {
+      setResumeFile(null);
+    }
+  }, [isEditing]);
 
   const displayName = useMemo(() => {
     if (resumeFilename) return resumeFilename;
@@ -27,12 +35,25 @@ export default function ResumeSection({
 
   const formattedDate = lastUpdated ? new Date(lastUpdated).toLocaleDateString() : "";
 
+  const handleFileChange = (file) => {
+    if (!file) {
+      setResumeFile(null);
+      return;
+    }
+    const maxBytes = 2 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      toast.error("Resume must be 2MB or smaller.");
+      return;
+    }
+    setResumeFile(file);
+  };
+
   const handleDrop = (event) => {
     event.preventDefault();
     setDragActive(false);
     const file = event.dataTransfer.files?.[0];
     if (file) {
-      onFileChange(file);
+      handleFileChange(file);
     }
   };
 
@@ -43,6 +64,37 @@ export default function ResumeSection({
 
   const handleDragLeave = () => setDragActive(false);
 
+  const handleSave = async () => {
+    if (!resumeFile) {
+      toast.error("Select a resume file to upload.");
+      return;
+    }
+    try {
+      await uploadResume(resumeFile).unwrap();
+      toast.success("Resume updated.");
+      onClose();
+    } catch (err) {
+      toast.error("Unable to upload resume.");
+    }
+  };
+
+  const handleDelete = async () => {
+    const confirmed = window.confirm("Delete this resume? This action cannot be undone.");
+    if (!confirmed) return;
+    try {
+      await deleteResume().unwrap();
+      toast.success("Resume deleted.");
+      onClose();
+    } catch (err) {
+      toast.error("Unable to delete resume.");
+    }
+  };
+
+  const handleCancel = () => {
+    setResumeFile(null);
+    onClose();
+  };
+
   return (
     <ProfileSectionCard
       title="Resume"
@@ -52,9 +104,9 @@ export default function ResumeSection({
           isEditing={isEditing}
           isLocked={isLocked}
           onEdit={onEdit}
-          onCancel={onCancel}
-          onSave={onSave}
-          saveLabel="Save Resume"
+          onCancel={handleCancel}
+          onSave={handleSave}
+          saveLabel={isUploading ? "Uploading..." : "Save Resume"}
         />
       }
     >
@@ -91,7 +143,7 @@ export default function ResumeSection({
                 type="button"
                 className="flex h-9 w-9 items-center justify-center rounded-full border border-surface-3 text-danger hover:bg-danger/10"
                 aria-label="Delete resume"
-                onClick={onDelete}
+                onClick={handleDelete}
                 disabled={isDeleting}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -118,7 +170,7 @@ export default function ResumeSection({
               accept=".pdf,.doc,.docx"
               className="hidden"
               id="resume-upload"
-              onChange={(event) => onFileChange(event.target.files?.[0] || null)}
+              onChange={(event) => handleFileChange(event.target.files?.[0] || null)}
             />
             <label htmlFor="resume-upload" className="mx-auto flex max-w-xs flex-col items-center gap-3">
               <span className="rounded-full border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-brand-700">
@@ -128,9 +180,7 @@ export default function ResumeSection({
                 Drag and drop your file here or click to upload.
               </span>
               <span className="text-xs text-ink-faint">
-                {selectedFile
-                  ? `Selected: ${selectedFile.name}`
-                  : "Supported formats: PDF, DOC, DOCX (up to 2MB)"}
+                {resumeFile ? `Selected: ${resumeFile.name}` : "Supported formats: PDF, DOC, DOCX (up to 2MB)"}
               </span>
             </label>
           </div>
@@ -139,3 +189,5 @@ export default function ResumeSection({
     </ProfileSectionCard>
   );
 }
+
+export default memo(ResumeSection);

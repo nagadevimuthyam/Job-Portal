@@ -1,7 +1,14 @@
+﻿import { memo, useEffect, useState } from "react";
+import { toast } from "sonner";
 import ProfileSectionCard from "../ProfileSectionCard";
 import SectionActions from "./SectionActions";
 import Input from "../../../../components/ui/Input";
 import Button from "../../../../components/ui/Button";
+import {
+  useCreateProjectMutation,
+  useUpdateProjectMutation,
+  useDeleteProjectMutation,
+} from "../../../../features/candidate/candidateProfileApi";
 
 const blankProject = {
   title: "",
@@ -9,18 +16,24 @@ const blankProject = {
   link: "",
 };
 
-export default function ProjectsSection({
-  items,
-  draft,
-  setDraft,
-  isEditing,
-  isLocked,
-  onEdit,
-  onCancel,
-  onSave,
-  onRemoveExisting,
-}) {
-  const activeList = isEditing ? draft : items;
+const stripUiFields = (item) => {
+  const { _status, _key, ...rest } = item;
+  return rest;
+};
+
+function ProjectsSection({ items, isEditing, isLocked, onEdit, onClose }) {
+  const [draft, setDraft] = useState([]);
+  const [removedIds, setRemovedIds] = useState([]);
+  const [createProject] = useCreateProjectMutation();
+  const [updateProject] = useUpdateProjectMutation();
+  const [deleteProject] = useDeleteProjectMutation();
+
+  useEffect(() => {
+    if (isEditing) {
+      setDraft(items.map((project) => ({ ...project })));
+      setRemovedIds([]);
+    }
+  }, [isEditing, items]);
 
   const handleAdd = () => {
     setDraft([...draft, { ...blankProject, _status: "new", _key: Date.now() }]);
@@ -40,10 +53,36 @@ export default function ProjectsSection({
 
   const handleRemove = (item, index) => {
     if (item.id) {
-      onRemoveExisting(item.id);
+      setRemovedIds((prev) => (prev.includes(item.id) ? prev : [...prev, item.id]));
     }
     setDraft(draft.filter((_, idx) => idx !== index));
   };
+
+  const handleSave = async () => {
+    try {
+      const createPayloads = draft.filter((item) => !item.id);
+      const updatePayloads = draft.filter((item) => item.id && item._status === "updated");
+      await Promise.all([
+        ...createPayloads.map((item) => createProject(stripUiFields(item)).unwrap()),
+        ...updatePayloads.map((item) =>
+          updateProject({ id: item.id, ...stripUiFields(item) }).unwrap()
+        ),
+        ...removedIds.map((id) => deleteProject(id).unwrap()),
+      ]);
+      toast.success("Projects updated.");
+      onClose();
+    } catch (err) {
+      toast.error("Unable to save projects.");
+    }
+  };
+
+  const handleCancel = () => {
+    setDraft(items.map((project) => ({ ...project })));
+    setRemovedIds([]);
+    onClose();
+  };
+
+  const activeList = isEditing ? draft : items;
 
   return (
     <ProfileSectionCard
@@ -54,8 +93,8 @@ export default function ProjectsSection({
           isEditing={isEditing}
           isLocked={isLocked}
           onEdit={onEdit}
-          onCancel={onCancel}
-          onSave={onSave}
+          onCancel={handleCancel}
+          onSave={handleSave}
           saveLabel="Save Projects"
         />
       }
@@ -127,3 +166,5 @@ export default function ProjectsSection({
     </ProfileSectionCard>
   );
 }
+
+export default memo(ProjectsSection);

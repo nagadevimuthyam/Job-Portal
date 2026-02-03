@@ -1,5 +1,4 @@
-﻿import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+﻿import { useRef, useState } from "react";
 import CandidateLayout from "../../../layouts/CandidateLayout";
 import Skeleton from "../../../components/ui/Skeleton";
 import ProfileLayout from "../components/ProfileLayout";
@@ -11,25 +10,7 @@ import EmploymentSection from "../components/sections/EmploymentSection";
 import EducationSection from "../components/sections/EducationSection";
 import ProjectsSection from "../components/sections/ProjectsSection";
 import PersonalDetailsSection from "../components/sections/PersonalDetailsSection";
-import {
-  useGetProfileQuery,
-  useUpdateProfileMutation,
-  useCreateSkillMutation,
-  useDeleteSkillMutation,
-  useCreateEmploymentMutation,
-  useUpdateEmploymentMutation,
-  useDeleteEmploymentMutation,
-  useCreateEducationMutation,
-  useUpdateEducationMutation,
-  useDeleteEducationMutation,
-  useCreateProjectMutation,
-  useUpdateProjectMutation,
-  useDeleteProjectMutation,
-  useUploadResumeMutation,
-  useDeleteResumeMutation,
-} from "../../../features/candidate/candidateProfileApi";
-
-const parseOptionalInt = (value) => (value === "" || value === null ? null : Number(value));
+import { useGetProfileQuery } from "../../../features/candidate/candidateProfileApi";
 
 export default function CandidateDashboard() {
   const { data, isLoading } = useGetProfileQuery();
@@ -39,41 +20,7 @@ export default function CandidateDashboard() {
   const educations = data?.educations ?? [];
   const projects = data?.projects ?? [];
 
-  const [updateProfile] = useUpdateProfileMutation();
-  const [createSkill] = useCreateSkillMutation();
-  const [deleteSkill] = useDeleteSkillMutation();
-  const [createEmployment] = useCreateEmploymentMutation();
-  const [updateEmployment] = useUpdateEmploymentMutation();
-  const [deleteEmployment] = useDeleteEmploymentMutation();
-  const [createEducation] = useCreateEducationMutation();
-  const [updateEducation] = useUpdateEducationMutation();
-  const [deleteEducation] = useDeleteEducationMutation();
-  const [createProject] = useCreateProjectMutation();
-  const [updateProject] = useUpdateProjectMutation();
-  const [deleteProject] = useDeleteProjectMutation();
-  const [uploadResume, { isLoading: isUploadingResume }] = useUploadResumeMutation();
-  const [deleteResume, { isLoading: isDeletingResume }] = useDeleteResumeMutation();
-
   const [activeSection, setActiveSection] = useState(null);
-  const [resumeFile, setResumeFile] = useState(null);
-  const [personalForm, setPersonalForm] = useState({
-    full_name: "",
-    email: "",
-    phone: "",
-    location: "",
-    total_experience_years: 0,
-    total_experience_months: 0,
-    notice_period_days: "",
-    expected_salary: "",
-  });
-  const [summaryForm, setSummaryForm] = useState("");
-  const [skillsDraft, setSkillsDraft] = useState([]);
-  const [employmentDraft, setEmploymentDraft] = useState([]);
-  const [educationDraft, setEducationDraft] = useState([]);
-  const [projectsDraft, setProjectsDraft] = useState([]);
-  const [removedEmploymentIds, setRemovedEmploymentIds] = useState([]);
-  const [removedEducationIds, setRemovedEducationIds] = useState([]);
-  const [removedProjectIds, setRemovedProjectIds] = useState([]);
 
   const resumeRef = useRef(null);
   const summaryRef = useRef(null);
@@ -93,22 +40,6 @@ export default function CandidateDashboard() {
     personal: personalRef,
   };
 
-  useEffect(() => {
-    if (profile) {
-      setPersonalForm({
-        full_name: profile.full_name || "",
-        email: profile.email || "",
-        phone: profile.phone || "",
-        location: profile.location || "",
-        total_experience_years: profile.total_experience_years ?? 0,
-        total_experience_months: profile.total_experience_months ?? 0,
-        notice_period_days: profile.notice_period_days ?? "",
-        expected_salary: profile.expected_salary ?? "",
-      });
-      setSummaryForm(profile.summary || "");
-    }
-  }, [profile]);
-
   const quickLinks = [
     { id: "resume", label: "Resume" },
     { id: "summary", label: "Summary" },
@@ -125,240 +56,7 @@ export default function CandidateDashboard() {
     sectionRefs[id]?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const handleResumeFileChange = (file) => {
-    if (!file) {
-      setResumeFile(null);
-      return;
-    }
-    const maxBytes = 2 * 1024 * 1024;
-    if (file.size > maxBytes) {
-      toast.error("Resume must be 2MB or smaller.");
-      return;
-    }
-    setResumeFile(file);
-  };
-
-  const handleSavePersonal = async () => {
-    try {
-      await updateProfile({
-        full_name: personalForm.full_name,
-        email: personalForm.email,
-        phone: personalForm.phone,
-        location: personalForm.location,
-        total_experience_years: Number(personalForm.total_experience_years || 0),
-        total_experience_months: Number(personalForm.total_experience_months || 0),
-        notice_period_days: parseOptionalInt(personalForm.notice_period_days),
-        expected_salary: parseOptionalInt(personalForm.expected_salary),
-      }).unwrap();
-      toast.success("Personal details updated.");
-      setActiveSection(null);
-    } catch (err) {
-      toast.error("Unable to update personal details.");
-    }
-  };
-
-  const handleSaveSummary = async () => {
-    try {
-      await updateProfile({ summary: summaryForm }).unwrap();
-      toast.success("Summary updated.");
-      setActiveSection(null);
-    } catch (err) {
-      toast.error("Unable to update summary.");
-    }
-  };
-
-  const beginSectionEdit = (section) => {
-    if (activeSection && activeSection !== section) return;
-    setActiveSection(section);
-    if (section === "summary") {
-      setSummaryForm(profile?.summary || "");
-    }
-    if (section === "personal") {
-      setPersonalForm({
-        full_name: profile?.full_name || "",
-        email: profile?.email || "",
-        phone: profile?.phone || "",
-        location: profile?.location || "",
-        total_experience_years: profile?.total_experience_years ?? 0,
-        total_experience_months: profile?.total_experience_months ?? 0,
-        notice_period_days: profile?.notice_period_days ?? "",
-        expected_salary: profile?.expected_salary ?? "",
-      });
-    }
-    if (section === "skills") {
-      setSkillsDraft(skills.map((skill) => ({ ...skill })));
-    }
-    if (section === "employment") {
-      setEmploymentDraft(employments.map((job) => ({ ...job })));
-      setRemovedEmploymentIds([]);
-    }
-    if (section === "education") {
-      setEducationDraft(educations.map((edu) => ({ ...edu })));
-      setRemovedEducationIds([]);
-    }
-    if (section === "projects") {
-      setProjectsDraft(projects.map((project) => ({ ...project })));
-      setRemovedProjectIds([]);
-    }
-    if (section === "resume") {
-      setResumeFile(null);
-    }
-  };
-
-  const cancelSectionEdit = (section) => {
-    setActiveSection(null);
-    if (section === "summary") {
-      setSummaryForm(profile?.summary || "");
-    }
-    if (section === "personal") {
-      setPersonalForm({
-        full_name: profile?.full_name || "",
-        email: profile?.email || "",
-        phone: profile?.phone || "",
-        location: profile?.location || "",
-        total_experience_years: profile?.total_experience_years ?? 0,
-        total_experience_months: profile?.total_experience_months ?? 0,
-        notice_period_days: profile?.notice_period_days ?? "",
-        expected_salary: profile?.expected_salary ?? "",
-      });
-    }
-    if (section === "skills") {
-      setSkillsDraft([]);
-    }
-    if (section === "employment") {
-      setEmploymentDraft([]);
-      setRemovedEmploymentIds([]);
-    }
-    if (section === "education") {
-      setEducationDraft([]);
-      setRemovedEducationIds([]);
-    }
-    if (section === "projects") {
-      setProjectsDraft([]);
-      setRemovedProjectIds([]);
-    }
-    if (section === "resume") {
-      setResumeFile(null);
-    }
-  };
-
-  const handleSaveSkills = async () => {
-    const draftIds = new Set(skillsDraft.filter((skill) => skill.id).map((skill) => skill.id));
-    const toCreate = skillsDraft.filter((skill) => !skill.id);
-    const toDelete = skills.filter((skill) => !draftIds.has(skill.id));
-
-    try {
-      await Promise.all([
-        ...toCreate.map((skill) => createSkill({ name: skill.name }).unwrap()),
-        ...toDelete.map((skill) => deleteSkill(skill.id).unwrap()),
-      ]);
-      toast.success("Skills updated.");
-      setActiveSection(null);
-    } catch (err) {
-      toast.error("Unable to update skills.");
-    }
-  };
-
-  const handleSaveEmployment = async () => {
-    try {
-      const createPayloads = employmentDraft.filter((item) => !item.id);
-      const updatePayloads = employmentDraft.filter((item) => item.id && item._status === "updated");
-      await Promise.all([
-        ...createPayloads.map((item) =>
-          createEmployment({
-            ...item,
-            end_date: item.is_current ? null : item.end_date || null,
-          }).unwrap()
-        ),
-        ...updatePayloads.map((item) =>
-          updateEmployment({
-            id: item.id,
-            ...item,
-            end_date: item.is_current ? null : item.end_date || null,
-          }).unwrap()
-        ),
-        ...removedEmploymentIds.map((id) => deleteEmployment(id).unwrap()),
-      ]);
-      toast.success("Employment updated.");
-      setActiveSection(null);
-    } catch (err) {
-      toast.error("Unable to save employment.");
-    }
-  };
-
-  const handleSaveEducation = async () => {
-    try {
-      const createPayloads = educationDraft.filter((item) => !item.id);
-      const updatePayloads = educationDraft.filter((item) => item.id && item._status === "updated");
-      await Promise.all([
-        ...createPayloads.map((item) =>
-          createEducation({
-            ...item,
-            start_year: Number(item.start_year || 0),
-            end_year: Number(item.end_year || 0),
-          }).unwrap()
-        ),
-        ...updatePayloads.map((item) =>
-          updateEducation({
-            id: item.id,
-            ...item,
-            start_year: Number(item.start_year || 0),
-            end_year: Number(item.end_year || 0),
-          }).unwrap()
-        ),
-        ...removedEducationIds.map((id) => deleteEducation(id).unwrap()),
-      ]);
-      toast.success("Education updated.");
-      setActiveSection(null);
-    } catch (err) {
-      toast.error("Unable to save education.");
-    }
-  };
-
-  const handleSaveProjects = async () => {
-    try {
-      const createPayloads = projectsDraft.filter((item) => !item.id);
-      const updatePayloads = projectsDraft.filter((item) => item.id && item._status === "updated");
-      await Promise.all([
-        ...createPayloads.map((item) => createProject(item).unwrap()),
-        ...updatePayloads.map((item) => updateProject({ id: item.id, ...item }).unwrap()),
-        ...removedProjectIds.map((id) => deleteProject(id).unwrap()),
-      ]);
-      toast.success("Projects updated.");
-      setActiveSection(null);
-    } catch (err) {
-      toast.error("Unable to save projects.");
-    }
-  };
-
-  const handleSaveResume = async () => {
-    if (!resumeFile) {
-      toast.error("Select a resume file to upload.");
-      return;
-    }
-    try {
-      await uploadResume(resumeFile).unwrap();
-      toast.success("Resume updated.");
-      setActiveSection(null);
-      setResumeFile(null);
-    } catch (err) {
-      toast.error("Unable to upload resume.");
-    }
-  };
-
-  const handleDeleteResume = async () => {
-    const confirmed = window.confirm("Delete this resume? This action cannot be undone.");
-    if (!confirmed) {
-      return;
-    }
-    try {
-      await deleteResume().unwrap();
-      toast.success("Resume deleted.");
-      setActiveSection(null);
-    } catch (err) {
-      toast.error("Unable to delete resume.");
-    }
-  };
+  const handleCloseSection = () => setActiveSection(null);
 
   if (isLoading) {
     return <Skeleton className="h-64 w-full" />;
@@ -379,6 +77,9 @@ export default function CandidateDashboard() {
                 percent={data?.profile_completion_percent ?? 0}
                 lastUpdated={data?.last_updated}
                 subtitle="Complete your profile to boost visibility."
+                missingDetails={data?.missing_details || []}
+                missingCount={data?.missing_count || 0}
+                onJumpToSection={handleQuickLink}
               />
               <div className="rounded-xl border border-surface-3 bg-white/70 px-4 py-3 md:block">
                 <div className="flex gap-3 overflow-x-auto pb-2">
@@ -402,6 +103,9 @@ export default function CandidateDashboard() {
                 percent={data?.profile_completion_percent ?? 0}
                 lastUpdated={data?.last_updated}
                 subtitle="Complete your profile to boost visibility."
+                missingDetails={data?.missing_details || []}
+                missingCount={data?.missing_count || 0}
+                onJumpToSection={handleQuickLink}
               />
               <div className="rounded-xl border border-surface-3 bg-white/70 px-4 py-4 shadow-soft">
                 <p className="text-xs font-semibold uppercase tracking-wide text-ink-faint">Quick links</p>
@@ -427,103 +131,77 @@ export default function CandidateDashboard() {
               resumeUrl={profile?.resume_url}
               resumeFilename={profile?.resume_filename}
               lastUpdated={profile?.last_updated}
-              selectedFile={resumeFile}
-              onFileChange={handleResumeFileChange}
-              onDelete={handleDeleteResume}
               isEditing={activeSection === "resume"}
               isLocked={isLocked("resume")}
-              onEdit={() => beginSectionEdit("resume")}
-              onCancel={() => cancelSectionEdit("resume")}
-              onSave={handleSaveResume}
-              isUploading={isUploadingResume}
-              isDeleting={isDeletingResume}
+              onEdit={() => setActiveSection("resume")}
+              onClose={handleCloseSection}
             />
           </div>
 
           <div ref={sectionRefs.summary}>
             <SummarySection
-              summary={profile?.summary}
-              draft={summaryForm}
-              onChange={setSummaryForm}
+              summary={profile?.summary || ""}
               isEditing={activeSection === "summary"}
               isLocked={isLocked("summary")}
-              onEdit={() => beginSectionEdit("summary")}
-              onCancel={() => cancelSectionEdit("summary")}
-              onSave={handleSaveSummary}
+              onEdit={() => setActiveSection("summary")}
+              onClose={handleCloseSection}
             />
           </div>
 
           <div ref={sectionRefs.skills}>
             <SkillsSection
               skills={skills}
-              draft={skillsDraft}
-              setDraft={setSkillsDraft}
               isEditing={activeSection === "skills"}
               isLocked={isLocked("skills")}
-              onEdit={() => beginSectionEdit("skills")}
-              onCancel={() => cancelSectionEdit("skills")}
-              onSave={handleSaveSkills}
+              onEdit={() => setActiveSection("skills")}
+              onClose={handleCloseSection}
             />
           </div>
 
           <div ref={sectionRefs.employment}>
             <EmploymentSection
               items={employments}
-              draft={employmentDraft}
-              setDraft={setEmploymentDraft}
               isEditing={activeSection === "employment"}
               isLocked={isLocked("employment")}
-              onEdit={() => beginSectionEdit("employment")}
-              onCancel={() => cancelSectionEdit("employment")}
-              onSave={handleSaveEmployment}
-              onRemoveExisting={(id) =>
-                setRemovedEmploymentIds((prev) => (prev.includes(id) ? prev : [...prev, id]))
-              }
+              onEdit={() => setActiveSection("employment")}
+              onClose={handleCloseSection}
             />
           </div>
 
           <div ref={sectionRefs.education}>
             <EducationSection
               items={educations}
-              draft={educationDraft}
-              setDraft={setEducationDraft}
               isEditing={activeSection === "education"}
               isLocked={isLocked("education")}
-              onEdit={() => beginSectionEdit("education")}
-              onCancel={() => cancelSectionEdit("education")}
-              onSave={handleSaveEducation}
-              onRemoveExisting={(id) =>
-                setRemovedEducationIds((prev) => (prev.includes(id) ? prev : [...prev, id]))
-              }
+              onEdit={() => setActiveSection("education")}
+              onClose={handleCloseSection}
             />
           </div>
 
           <div ref={sectionRefs.projects}>
             <ProjectsSection
               items={projects}
-              draft={projectsDraft}
-              setDraft={setProjectsDraft}
               isEditing={activeSection === "projects"}
               isLocked={isLocked("projects")}
-              onEdit={() => beginSectionEdit("projects")}
-              onCancel={() => cancelSectionEdit("projects")}
-              onSave={handleSaveProjects}
-              onRemoveExisting={(id) =>
-                setRemovedProjectIds((prev) => (prev.includes(id) ? prev : [...prev, id]))
-              }
+              onEdit={() => setActiveSection("projects")}
+              onClose={handleCloseSection}
             />
           </div>
 
           <div ref={sectionRefs.personal}>
             <PersonalDetailsSection
-              profile={profile}
-              draft={personalForm}
-              setDraft={setPersonalForm}
+              fullName={profile?.full_name || ""}
+              email={profile?.email || ""}
+              phone={profile?.phone || ""}
+              location={profile?.location || ""}
+              totalExperienceYears={profile?.total_experience_years ?? 0}
+              totalExperienceMonths={profile?.total_experience_months ?? 0}
+              noticePeriodDays={profile?.notice_period_days ?? ""}
+              expectedSalary={profile?.expected_salary ?? ""}
               isEditing={activeSection === "personal"}
               isLocked={isLocked("personal")}
-              onEdit={() => beginSectionEdit("personal")}
-              onCancel={() => cancelSectionEdit("personal")}
-              onSave={handleSavePersonal}
+              onEdit={() => setActiveSection("personal")}
+              onClose={handleCloseSection}
             />
           </div>
         </ProfileLayout>
