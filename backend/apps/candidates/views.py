@@ -1,3 +1,4 @@
+import logging
 from rest_framework import status
 from rest_framework import parsers
 from rest_framework.permissions import IsAuthenticated
@@ -23,6 +24,8 @@ from .serializers import (
     CandidateProjectSerializer,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class CandidateRegisterView(APIView):
     permission_classes = []
@@ -35,6 +38,78 @@ class CandidateRegisterView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+def calculate_profile_completion(profile):
+    weights = {
+        "personal_full_name": 5,
+        "personal_email": 5,
+        "personal_phone": 5,
+        "personal_location": 5,
+        "summary": 15,
+        "skills": 15,
+        "employment": 15,
+        "education": 15,
+        "projects": 10,
+        "resume": 10,
+    }
+
+    completion_map = {
+        "personal_full_name": bool(profile.full_name),
+        "personal_email": bool(profile.email),
+        "personal_phone": bool(profile.phone),
+        "personal_location": bool(profile.location),
+        "summary": bool(profile.summary),
+        "skills": profile.skills.exists(),
+        "employment": profile.employments.exists(),
+        "education": profile.educations.exists(),
+        "projects": profile.projects.exists(),
+        "resume": bool(profile.resume_file),
+    }
+
+    total = 0
+    missing_details = []
+    labels = {
+        "personal_full_name": "Add full name",
+        "personal_email": "Add email",
+        "personal_phone": "Add phone number",
+        "personal_location": "Add location",
+        "summary": "Add profile summary",
+        "skills": "Add key skills",
+        "employment": "Add employment history",
+        "education": "Add education details",
+        "projects": "Add projects",
+        "resume": "Upload resume",
+    }
+
+    for key, weight in weights.items():
+        if completion_map.get(key):
+            total += weight
+        else:
+            missing_details.append(
+                {
+                    "key": key,
+                    "label": labels.get(key, key),
+                    "percent": weight,
+                }
+            )
+
+    return min(total, 100), missing_details
+
+
+def build_profile_response(profile, request):
+    completion_percent, missing_details = calculate_profile_completion(profile)
+    return {
+        "profile": CandidateProfileSerializer(profile, context={"request": request}).data,
+        "skills": CandidateSkillSerializer(profile.skills.all(), many=True).data,
+        "employments": CandidateEmploymentSerializer(profile.employments.all(), many=True).data,
+        "educations": CandidateEducationSerializer(profile.educations.all(), many=True).data,
+        "projects": CandidateProjectSerializer(profile.projects.all(), many=True).data,
+        "profile_completion_percent": completion_percent,
+        "missing_details": missing_details,
+        "missing_count": len(missing_details),
+        "last_updated": profile.updated_at,
+    }
+
+
 class CandidateProfileView(APIView):
     permission_classes = [IsAuthenticated, IsCandidate]
 
@@ -45,36 +120,12 @@ class CandidateProfileView(APIView):
             .get(user=user)
         )
 
-    def _profile_completion(self, profile):
-        sections = [
-            all([profile.full_name, profile.email, profile.phone, profile.location]),
-            bool(profile.summary),
-            profile.skills.exists(),
-            profile.employments.exists(),
-            profile.educations.exists(),
-            profile.projects.exists(),
-            bool(profile.resume_file),
-        ]
-        completed = sum(1 for section in sections if section)
-        return round((completed / len(sections)) * 100)
-
-    def _build_response(self, profile, request):
-        return {
-            "profile": CandidateProfileSerializer(profile, context={"request": request}).data,
-            "skills": CandidateSkillSerializer(profile.skills.all(), many=True).data,
-            "employments": CandidateEmploymentSerializer(profile.employments.all(), many=True).data,
-            "educations": CandidateEducationSerializer(profile.educations.all(), many=True).data,
-            "projects": CandidateProjectSerializer(profile.projects.all(), many=True).data,
-            "profile_completion_percent": self._profile_completion(profile),
-            "last_updated": profile.updated_at,
-        }
-
     def get(self, request):
         try:
             profile = self._get_profile(request.user)
         except CandidateProfile.DoesNotExist:
             return Response({"detail": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
-        return Response(self._build_response(profile, request))
+        return Response(build_profile_response(profile, request))
 
     def patch(self, request):
         try:
@@ -85,7 +136,7 @@ class CandidateProfileView(APIView):
         if serializer.is_valid():
             serializer.save()
             profile.refresh_from_db()
-            return Response(self._build_response(profile, request))
+            return Response(build_profile_response(profile, request))
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -217,22 +268,41 @@ class CandidateResumeUploadView(APIView):
     parser_classes = [parsers.MultiPartParser, parsers.FormParser]
 
     def post(self, request):
-        profile = get_object_or_404(CandidateProfile, user=request.user)
-        file_obj = (
-            request.FILES.get("resume")
-            or request.FILES.get("resume_file")
-            or request.FILES.get("file")
-        )
-        if not file_obj:
-            return Response({"detail": "Resume file is required."}, status=status.HTTP_400_BAD_REQUEST)
-        profile.resume_file = file_obj
-        profile.save(update_fields=["resume_file", "updated_at"])
-        return Response(CandidateProfileSerializer(profile, context={"request": request}).data)
+        try:
+            profile = get_object_or_404(CandidateProfile, user=request.user)
+            file_obj = (
+                request.FILES.get("resume")
+                or request.FILES.get("resume_file")
+                or request.FILES.get("file")
+            )
+            if not file_obj:
+                return Response(
+                    {"detail": "Resume file is required.", "code": "RESUME_FILE_REQUIRED"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            profile.resume_file = file_obj
+            profile.save(update_fields=["resume_file", "updated_at"])
+            profile.refresh_from_db()
+            return Response(build_profile_response(profile, request))
+        except Exception:
+            logger.exception("Resume upload failed for user %s", request.user.id)
+            return Response(
+                {"detail": "Unable to upload resume.", "code": "RESUME_UPLOAD_ERROR"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     def delete(self, request):
-        profile = get_object_or_404(CandidateProfile, user=request.user)
-        if profile.resume_file:
-            profile.resume_file.delete(save=False)
-        profile.resume_file = None
-        profile.save(update_fields=["resume_file", "updated_at"])
-        return Response(CandidateProfileSerializer(profile, context={"request": request}).data)
+        try:
+            profile = get_object_or_404(CandidateProfile, user=request.user)
+            if profile.resume_file:
+                profile.resume_file.delete(save=False)
+            profile.resume_file = None
+            profile.save(update_fields=["resume_file", "updated_at"])
+            profile.refresh_from_db()
+            return Response(build_profile_response(profile, request))
+        except Exception:
+            logger.exception("Resume delete failed for user %s", request.user.id)
+            return Response(
+                {"detail": "Unable to delete resume.", "code": "RESUME_DELETE_ERROR"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
