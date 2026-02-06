@@ -2,6 +2,9 @@ from django.urls import path
 from .views import (
     CandidateRegisterView,
     CandidateProfileView,
+    CandidateProfileOverviewView,
+    CandidateBasicDetailsView,
+    CandidatePhotoUploadView,
     CandidateSkillCreateView,
     CandidateSkillDeleteView,
     CandidateEmploymentCreateView,
@@ -16,6 +19,9 @@ from .views import (
 urlpatterns = [
     path("register/", CandidateRegisterView.as_view(), name="candidate-register"),
     path("profile/", CandidateProfileView.as_view(), name="candidate-profile"),
+    path("profile/overview/", CandidateProfileOverviewView.as_view(), name="candidate-profile-overview"),
+    path("profile/basic-details/", CandidateBasicDetailsView.as_view(), name="candidate-profile-basic"),
+    path("profile/photo/", CandidatePhotoUploadView.as_view(), name="candidate-profile-photo"),
     path("profile/skills/", CandidateSkillCreateView.as_view(), name="candidate-skill-create"),
     path(
         "profile/skills/<uuid:skill_id>/",

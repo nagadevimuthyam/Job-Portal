@@ -18,6 +18,7 @@ from .serializers import (
     CandidateRegisterSerializer,
     CandidateProfileSerializer,
     CandidateProfileUpdateSerializer,
+    CandidateBasicDetailsSerializer,
     CandidateSkillSerializer,
     CandidateEmploymentSerializer,
     CandidateEducationSerializer,
@@ -44,11 +45,13 @@ def calculate_profile_completion(profile):
         "personal_email": 5,
         "personal_phone": 5,
         "personal_location": 5,
+        "work_status": 5,
+        "availability": 5,
         "summary": 15,
         "skills": 15,
         "employment": 15,
         "education": 15,
-        "projects": 10,
+        "projects": 5,
         "resume": 10,
     }
 
@@ -57,6 +60,8 @@ def calculate_profile_completion(profile):
         "personal_email": bool(profile.email),
         "personal_phone": bool(profile.phone),
         "personal_location": bool(profile.location),
+        "work_status": bool(profile.work_status),
+        "availability": bool(profile.availability_to_join),
         "summary": bool(profile.summary),
         "skills": profile.skills.exists(),
         "employment": profile.employments.exists(),
@@ -72,6 +77,8 @@ def calculate_profile_completion(profile):
         "personal_email": "Add email",
         "personal_phone": "Add phone number",
         "personal_location": "Add location",
+        "work_status": "Add work status",
+        "availability": "Add availability to join",
         "summary": "Add profile summary",
         "skills": "Add key skills",
         "employment": "Add employment history",
@@ -125,7 +132,14 @@ class CandidateProfileView(APIView):
             profile = self._get_profile(request.user)
         except CandidateProfile.DoesNotExist:
             return Response({"detail": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
-        return Response(build_profile_response(profile, request))
+        try:
+            return Response(build_profile_response(profile, request))
+        except Exception:
+            logger.exception("Profile fetch failed for user %s", request.user.id)
+            return Response(
+                {"detail": "Unable to load profile.", "code": "PROFILE_FETCH_ERROR"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     def patch(self, request):
         try:
@@ -136,7 +150,14 @@ class CandidateProfileView(APIView):
         if serializer.is_valid():
             serializer.save()
             profile.refresh_from_db()
-            return Response(build_profile_response(profile, request))
+            try:
+                return Response(build_profile_response(profile, request))
+            except Exception:
+                logger.exception("Profile update response failed for user %s", request.user.id)
+                return Response(
+                    {"detail": "Profile saved but response failed.", "code": "PROFILE_RESPONSE_ERROR"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -304,5 +325,97 @@ class CandidateResumeUploadView(APIView):
             logger.exception("Resume delete failed for user %s", request.user.id)
             return Response(
                 {"detail": "Unable to delete resume.", "code": "RESUME_DELETE_ERROR"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class CandidateProfileOverviewView(APIView):
+    permission_classes = [IsAuthenticated, IsCandidate]
+
+    def get(self, request):
+        try:
+            profile = (
+                CandidateProfile.objects.select_related("user")
+                .prefetch_related("skills", "employments", "educations", "projects")
+                .get(user=request.user)
+            )
+        except CandidateProfile.DoesNotExist:
+            return Response(
+                {"detail": "Profile not found.", "code": "PROFILE_NOT_FOUND"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        try:
+            return Response(build_profile_response(profile, request))
+        except Exception:
+            logger.exception("Profile overview fetch failed for user %s", request.user.id)
+            return Response(
+                {"detail": "Unable to load profile overview.", "code": "PROFILE_OVERVIEW_ERROR"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class CandidateBasicDetailsView(APIView):
+    permission_classes = [IsAuthenticated, IsCandidate]
+
+    def patch(self, request):
+        try:
+            profile = CandidateProfile.objects.get(user=request.user)
+        except CandidateProfile.DoesNotExist:
+            return Response(
+                {"detail": "Profile not found.", "code": "PROFILE_NOT_FOUND"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        serializer = CandidateBasicDetailsSerializer(profile, data=request.data, partial=True)
+        if serializer.is_valid():
+            try:
+                serializer.save()
+                profile.refresh_from_db()
+                return Response(build_profile_response(profile, request))
+            except Exception:
+                logger.exception("Basic details update failed for user %s", request.user.id)
+                return Response(
+                    {"detail": "Unable to update basic details.", "code": "BASIC_DETAILS_ERROR"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
+        return Response(
+            {"detail": serializer.errors, "code": "BASIC_DETAILS_INVALID_PAYLOAD"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class CandidatePhotoUploadView(APIView):
+    permission_classes = [IsAuthenticated, IsCandidate]
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser]
+
+    def post(self, request):
+        try:
+            profile = CandidateProfile.objects.get(user=request.user)
+        except CandidateProfile.DoesNotExist:
+            return Response(
+                {"detail": "Profile not found.", "code": "PROFILE_NOT_FOUND"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        file_obj = (
+            request.FILES.get("photo")
+            or request.FILES.get("photo_file")
+            or request.FILES.get("file")
+        )
+        if not file_obj:
+            return Response(
+                {"detail": "Photo file is required.", "code": "PHOTO_FILE_REQUIRED"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            profile.photo_file = file_obj
+            profile.save(update_fields=["photo_file", "updated_at"])
+            profile.refresh_from_db()
+            return Response(
+                {"photo_url": CandidateProfileSerializer(profile, context={"request": request}).data.get("photo_url")},
+                status=status.HTTP_200_OK,
+            )
+        except Exception:
+            logger.exception("Photo upload failed for user %s", request.user.id)
+            return Response(
+                {"detail": "Unable to upload photo.", "code": "PHOTO_UPLOAD_ERROR"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )

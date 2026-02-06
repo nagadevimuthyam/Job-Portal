@@ -15,7 +15,10 @@ class CandidateProfile(models.Model):
     email = models.EmailField()
     phone = models.CharField(max_length=30, blank=True)
     location = models.CharField(max_length=200, blank=True)
+    location_country = models.CharField(max_length=60, default="India")
     summary = models.TextField(blank=True)
+    work_status = models.CharField(max_length=20, blank=True)
+    availability_to_join = models.CharField(max_length=30, blank=True)
     total_experience_years = models.PositiveSmallIntegerField(default=0)
     total_experience_months = models.PositiveSmallIntegerField(
         default=0,
@@ -24,6 +27,7 @@ class CandidateProfile(models.Model):
     notice_period_days = models.PositiveIntegerField(null=True, blank=True)
     expected_salary = models.PositiveIntegerField(null=True, blank=True)
     resume_file = models.FileField(upload_to="resumes/", null=True, blank=True)
+    photo_file = models.FileField(upload_to="profile-photos/", null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

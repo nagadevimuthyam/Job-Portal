@@ -36,6 +36,9 @@ class CandidateRegisterSerializer(serializers.Serializer):
             phone=validated_data.get("phone", ""),
             location=validated_data.get("location", ""),
             summary="",
+            location_country="India",
+            work_status="",
+            availability_to_join="",
         )
         return profile
 
@@ -43,6 +46,7 @@ class CandidateRegisterSerializer(serializers.Serializer):
 class CandidateProfileSerializer(serializers.ModelSerializer):
     resume_url = serializers.SerializerMethodField()
     resume_filename = serializers.SerializerMethodField()
+    photo_url = serializers.SerializerMethodField()
     last_updated = serializers.DateTimeField(source="updated_at", read_only=True)
 
     class Meta:
@@ -53,7 +57,10 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
             "email",
             "phone",
             "location",
+            "location_country",
             "summary",
+            "work_status",
+            "availability_to_join",
             "total_experience_years",
             "total_experience_months",
             "notice_period_days",
@@ -61,6 +68,8 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
             "resume_file",
             "resume_url",
             "resume_filename",
+            "photo_file",
+            "photo_url",
             "last_updated",
         )
 
@@ -77,6 +86,14 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
             return ""
         return obj.resume_file.name.split("/")[-1]
 
+    def get_photo_url(self, obj):
+        request = self.context.get("request")
+        if obj.photo_file and request:
+            return request.build_absolute_uri(obj.photo_file.url)
+        if obj.photo_file:
+            return obj.photo_file.url
+        return ""
+
 
 class CandidateProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -86,11 +103,28 @@ class CandidateProfileUpdateSerializer(serializers.ModelSerializer):
             "email",
             "phone",
             "location",
+            "location_country",
             "summary",
+            "work_status",
+            "availability_to_join",
             "total_experience_years",
             "total_experience_months",
             "notice_period_days",
             "expected_salary",
+        )
+
+
+class CandidateBasicDetailsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CandidateProfile
+        fields = (
+            "full_name",
+            "work_status",
+            "location_country",
+            "location",
+            "phone",
+            "email",
+            "availability_to_join",
         )
 
 
