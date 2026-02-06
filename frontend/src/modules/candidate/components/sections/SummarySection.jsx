@@ -1,16 +1,21 @@
-﻿import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { toast } from "sonner";
-import ProfileSectionCard from "../ProfileSectionCard";
+import SectionWrapper from "./SectionWrapper";
 import SectionActions from "./SectionActions";
+import SectionState from "./SectionState";
+import FieldError from "./FieldError";
+import parseApiErrors from "./parseApiErrors";
 import { useUpdateProfileMutation } from "../../../../features/candidate/candidateProfileApi";
 
 function SummarySection({ summary, isEditing, isLocked, onEdit, onClose }) {
   const [draft, setDraft] = useState("");
+  const [errors, setErrors] = useState({});
   const [updateProfile, { isLoading }] = useUpdateProfileMutation();
 
   useEffect(() => {
     if (isEditing) {
       setDraft(summary || "");
+      setErrors({});
     }
   }, [isEditing, summary]);
 
@@ -20,17 +25,20 @@ function SummarySection({ summary, isEditing, isLocked, onEdit, onClose }) {
       toast.success("Summary updated.");
       onClose();
     } catch (err) {
-      toast.error("Unable to update summary.");
+      const parsed = parseApiErrors(err);
+      setErrors(parsed);
+      toast.error(parsed._error || "Unable to update summary.");
     }
   };
 
   const handleCancel = () => {
     setDraft(summary || "");
+    setErrors({});
     onClose();
   };
 
   return (
-    <ProfileSectionCard
+    <SectionWrapper
       title="Summary"
       description="Give recruiters a strong first impression."
       actions={
@@ -50,17 +58,21 @@ function SummarySection({ summary, isEditing, isLocked, onEdit, onClose }) {
           <textarea
             rows={4}
             value={draft}
-            onChange={(event) => setDraft(event.target.value)}
+            onChange={(event) => {
+              setDraft(event.target.value);
+              if (errors.summary) {
+                setErrors((prev) => ({ ...prev, summary: "" }));
+              }
+            }}
             className="mt-1 w-full rounded-xl border border-surface-3 bg-surface-inverse px-3 py-2.5 text-sm text-ink shadow-sm focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-200"
             placeholder="Write 2-3 lines about your strengths and achievements."
           />
+          <FieldError message={errors.summary || errors._error} />
         </label>
       ) : (
-        <p className="text-sm text-ink-soft">
-          {summary || "Add a short summary highlighting your impact."}
-        </p>
+        <SectionState message={summary || "Add a short summary highlighting your impact."} />
       )}
-    </ProfileSectionCard>
+    </SectionWrapper>
   );
 }
 

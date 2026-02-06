@@ -6,9 +6,21 @@ export const candidateProfileApi = baseApi.injectEndpoints({
       query: () => "/api/candidate/profile/",
       providesTags: ["CandidateProfile"],
     }),
+    getProfileOverview: builder.query({
+      query: () => "/api/candidate/profile/overview/",
+      providesTags: ["CandidateProfile"],
+    }),
     updateProfile: builder.mutation({
       query: (payload) => ({
         url: "/api/candidate/profile/",
+        method: "PATCH",
+        body: payload,
+      }),
+      invalidatesTags: ["CandidateProfile"],
+    }),
+    updateBasicDetails: builder.mutation({
+      query: (payload) => ({
+        url: "/api/candidate/profile/basic-details/",
         method: "PATCH",
         body: payload,
       }),
@@ -117,12 +129,26 @@ export const candidateProfileApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["CandidateProfile"],
     }),
+    uploadPhoto: builder.mutation({
+      query: (file) => {
+        const formData = new FormData();
+        formData.append("photo", file);
+        return {
+          url: "/api/candidate/profile/photo/",
+          method: "POST",
+          body: formData,
+        };
+      },
+      invalidatesTags: ["CandidateProfile"],
+    }),
   }),
 });
 
 export const {
   useGetProfileQuery,
+  useGetProfileOverviewQuery,
   useUpdateProfileMutation,
+  useUpdateBasicDetailsMutation,
   useCreateSkillMutation,
   useDeleteSkillMutation,
   useCreateEmploymentMutation,
@@ -136,4 +162,5 @@ export const {
   useDeleteProjectMutation,
   useUploadResumeMutation,
   useDeleteResumeMutation,
+  useUploadPhotoMutation,
 } = candidateProfileApi;

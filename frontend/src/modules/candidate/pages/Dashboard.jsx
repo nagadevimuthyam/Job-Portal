@@ -2,7 +2,7 @@
 import CandidateLayout from "../../../layouts/CandidateLayout";
 import Skeleton from "../../../components/ui/Skeleton";
 import ProfileLayout from "../components/ProfileLayout";
-import ProfileCompletionCard from "../components/ProfileCompletionCard";
+import CandidateProfileBanner from "../components/CandidateProfileBanner";
 import ResumeSection from "../components/sections/ResumeSection";
 import SummarySection from "../components/sections/SummarySection";
 import SkillsSection from "../components/sections/SkillsSection";
@@ -70,43 +70,27 @@ export default function CandidateDashboard() {
           <p className="text-sm text-ink-faint">Polish every section for a premium profile.</p>
         </div>
 
+        <CandidateProfileBanner onJumpToSection={handleQuickLink} />
+
         <ProfileLayout
           top={
-            <div className="space-y-4">
-              <ProfileCompletionCard
-                percent={data?.profile_completion_percent ?? 0}
-                lastUpdated={data?.last_updated}
-                subtitle="Complete your profile to boost visibility."
-                missingDetails={data?.missing_details || []}
-                missingCount={data?.missing_count || 0}
-                onJumpToSection={handleQuickLink}
-              />
-              <div className="rounded-xl border border-surface-3 bg-white/70 px-4 py-3 md:block">
-                <div className="flex gap-3 overflow-x-auto pb-2">
-                  {quickLinks.map((link) => (
-                    <button
-                      key={link.id}
-                      type="button"
-                      onClick={() => handleQuickLink(link.id)}
-                      className="whitespace-nowrap rounded-full border border-surface-3 px-4 py-2 text-xs font-semibold text-ink hover:bg-surface-2"
-                    >
-                      {link.label}
-                    </button>
-                  ))}
-                </div>
+            <div className="rounded-xl border border-surface-3 bg-white/70 px-4 py-3 md:block">
+              <div className="flex gap-3 overflow-x-auto pb-2">
+                {quickLinks.map((link) => (
+                  <button
+                    key={link.id}
+                    type="button"
+                    onClick={() => handleQuickLink(link.id)}
+                    className="whitespace-nowrap rounded-full border border-surface-3 px-4 py-2 text-xs font-semibold text-ink hover:bg-surface-2"
+                  >
+                    {link.label}
+                  </button>
+                ))}
               </div>
             </div>
           }
           sidebar={
             <div className="space-y-4 lg:sticky lg:top-24">
-              <ProfileCompletionCard
-                percent={data?.profile_completion_percent ?? 0}
-                lastUpdated={data?.last_updated}
-                subtitle="Complete your profile to boost visibility."
-                missingDetails={data?.missing_details || []}
-                missingCount={data?.missing_count || 0}
-                onJumpToSection={handleQuickLink}
-              />
               <div className="rounded-xl border border-surface-3 bg-white/70 px-4 py-4 shadow-soft">
                 <p className="text-xs font-semibold uppercase tracking-wide text-ink-faint">Quick links</p>
                 <div className="mt-3 space-y-2 text-sm">

@@ -1,7 +1,9 @@
-﻿import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import ProfileSectionCard from "../ProfileSectionCard";
+import SectionWrapper from "./SectionWrapper";
 import SectionActions from "./SectionActions";
+import FieldError from "./FieldError";
+import parseApiErrors from "./parseApiErrors";
 import {
   useUploadResumeMutation,
   useDeleteResumeMutation,
@@ -18,12 +20,14 @@ function ResumeSection({
 }) {
   const [resumeFile, setResumeFile] = useState(null);
   const [dragActive, setDragActive] = useState(false);
+  const [error, setError] = useState("");
   const [uploadResume, { isLoading: isUploading }] = useUploadResumeMutation();
   const [deleteResume, { isLoading: isDeleting }] = useDeleteResumeMutation();
 
   useEffect(() => {
     if (isEditing) {
       setResumeFile(null);
+      setError("");
     }
   }, [isEditing]);
 
@@ -38,13 +42,17 @@ function ResumeSection({
   const handleFileChange = (file) => {
     if (!file) {
       setResumeFile(null);
+      setError("");
       return;
     }
     const maxBytes = 2 * 1024 * 1024;
     if (file.size > maxBytes) {
-      toast.error("Resume must be 2MB or smaller.");
+      const message = "Resume must be 2MB or smaller.";
+      toast.error(message);
+      setError(message);
       return;
     }
+    setError("");
     setResumeFile(file);
   };
 
@@ -66,7 +74,9 @@ function ResumeSection({
 
   const handleSave = async () => {
     if (!resumeFile) {
-      toast.error("Select a resume file to upload.");
+      const message = "Select a resume file to upload.";
+      toast.error(message);
+      setError(message);
       return;
     }
     try {
@@ -74,7 +84,10 @@ function ResumeSection({
       toast.success("Resume updated.");
       onClose();
     } catch (err) {
-      toast.error("Unable to upload resume.");
+      const parsed = parseApiErrors(err);
+      const message = parsed._error || "Unable to upload resume.";
+      toast.error(message);
+      setError(message);
     }
   };
 
@@ -86,17 +99,21 @@ function ResumeSection({
       toast.success("Resume deleted.");
       onClose();
     } catch (err) {
-      toast.error("Unable to delete resume.");
+      const parsed = parseApiErrors(err);
+      const message = parsed._error || "Unable to delete resume.";
+      toast.error(message);
+      setError(message);
     }
   };
 
   const handleCancel = () => {
     setResumeFile(null);
+    setError("");
     onClose();
   };
 
   return (
-    <ProfileSectionCard
+    <SectionWrapper
       title="Resume"
       description="Upload a recruiter-ready PDF or DOCX."
       actions={
@@ -183,10 +200,11 @@ function ResumeSection({
                 {resumeFile ? `Selected: ${resumeFile.name}` : "Supported formats: PDF, DOC, DOCX (up to 2MB)"}
               </span>
             </label>
+            <FieldError message={error} className="text-center" />
           </div>
         )}
       </div>
-    </ProfileSectionCard>
+    </SectionWrapper>
   );
 }
 

@@ -1,5 +1,6 @@
 import Button from "../../../components/ui/Button";
 import Card from "../../../components/ui/Card";
+import SectionHeader from "./sections/SectionHeader";
 
 export default function ProfileSectionCard({
   title,
@@ -13,10 +14,7 @@ export default function ProfileSectionCard({
   return (
     <Card className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h3 className="text-base font-semibold text-ink">{title}</h3>
-          {description && <p className="text-xs text-ink-faint">{description}</p>}
-        </div>
+        <SectionHeader title={title} description={description} />
         {actions}
         {!actions && !readonly && actionLabel && (
           <Button size="sm" variant="outline" onClick={onAction}>
