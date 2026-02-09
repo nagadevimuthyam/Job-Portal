@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
+from django.db.models import Count
 
 from apps.masteradmin.permissions import IsCandidate
 from .models import (
@@ -181,6 +182,23 @@ class CandidateSkillDeleteView(APIView):
         skill = get_object_or_404(CandidateSkill, id=skill_id, profile=profile)
         skill.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class SkillSuggestionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        query = (request.query_params.get("q") or "").strip()
+        base = CandidateSkill.objects.all()
+        if query:
+            base = base.filter(name__istartswith=query)
+
+        suggestions = (
+            base.values("name")
+            .annotate(count=Count("id"))
+            .order_by("-count", "name")[:10]
+        )
+        return Response([{"name": item["name"]} for item in suggestions])
 
 
 class CandidateEmploymentCreateView(APIView):
