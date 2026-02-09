@@ -42,6 +42,12 @@ function EducationSectionContainer({ items, isEditing, isLocked, onEdit, onClose
     }
   }, [isEditing, items]);
 
+  useEffect(() => {
+    if (draft.length > 0 && formError) {
+      setFormError("");
+    }
+  }, [draft.length, formError]);
+
   const handleAdd = () => {
     setDraft([...draft, { ...blankEducation, _status: "new", _key: Date.now() }]);
   };
@@ -72,6 +78,10 @@ function EducationSectionContainer({ items, isEditing, isLocked, onEdit, onClose
   };
 
   const handleSave = async () => {
+    if (draft.length === 0) {
+      setFormError("Please add at least one education entry before saving.");
+      return;
+    }
     try {
       const createPayloads = draft.filter((item) => !item.id);
       const updatePayloads = draft.filter((item) => item.id && item._status === "updated");

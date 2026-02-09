@@ -57,6 +57,12 @@ function EmploymentSectionContainer({ items, isEditing, isLocked, onEdit, onClos
     }
   }, [isEditing, items]);
 
+  useEffect(() => {
+    if (draft.length > 0 && formError) {
+      setFormError("");
+    }
+  }, [draft.length, formError]);
+
   const handleAdd = () => {
     setDraft([...draft, { ...blankEmployment, _status: "new", _key: Date.now() }]);
   };
@@ -87,6 +93,10 @@ function EmploymentSectionContainer({ items, isEditing, isLocked, onEdit, onClos
   };
 
   const handleSave = async () => {
+    if (draft.length === 0) {
+      setFormError("Please add at least one employment entry before saving.");
+      return;
+    }
     const validationErrors = validateEmployment(draft);
     if (Object.keys(validationErrors).length) {
       setErrors(validationErrors);

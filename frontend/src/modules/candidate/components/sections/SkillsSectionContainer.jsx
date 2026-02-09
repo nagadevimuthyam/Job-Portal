@@ -2,7 +2,6 @@ import { memo, useEffect, useState } from "react";
 import { toast } from "sonner";
 import SectionWrapper from "./SectionWrapper";
 import SectionActions from "./SectionActions";
-import SkillsSectionList from "./SkillsSectionList";
 import SkillsSectionForm from "./SkillsSectionForm";
 import FieldError from "./FieldError";
 import parseApiErrors from "./parseApiErrors";
@@ -13,7 +12,6 @@ import {
 
 function SkillsSectionContainer({ skills, isEditing, isLocked, onEdit, onClose }) {
   const [draft, setDraft] = useState([]);
-  const [newSkill, setNewSkill] = useState("");
   const [errors, setErrors] = useState({});
   const [createSkill] = useCreateSkillMutation();
   const [deleteSkill] = useDeleteSkillMutation();
@@ -25,25 +23,20 @@ function SkillsSectionContainer({ skills, isEditing, isLocked, onEdit, onClose }
     }
   }, [isEditing, skills]);
 
-  const handleAdd = () => {
-    const value = newSkill.trim();
-    if (!value) {
-      setErrors((prev) => ({ ...prev, name: "Skill is required." }));
-      return;
+  useEffect(() => {
+    if (draft.length > 0 && errors.list) {
+      setErrors((prev) => ({ ...prev, list: "" }));
     }
-    const exists = draft.some((skill) => skill.name.toLowerCase() === value.toLowerCase());
-    if (!exists) {
-      setDraft([...draft, { name: value }]);
-    }
-    setNewSkill("");
-    setErrors((prev) => ({ ...prev, name: "" }));
-  };
-
-  const handleRemoveDraft = (index) => {
-    setDraft(draft.filter((_, idx) => idx !== index));
-  };
+  }, [draft.length, errors.list]);
 
   const handleSave = async () => {
+    if (draft.length === 0) {
+      setErrors((prev) => ({
+        ...prev,
+        list: "Please add at least one skill before saving.",
+      }));
+      return;
+    }
     const draftIds = new Set(draft.filter((skill) => skill.id).map((skill) => skill.id));
     const toCreate = draft.filter((skill) => !skill.id);
     const toDelete = skills.filter((skill) => !draftIds.has(skill.id));
@@ -66,12 +59,9 @@ function SkillsSectionContainer({ skills, isEditing, isLocked, onEdit, onClose }
 
   const handleCancel = () => {
     setDraft(skills.map((skill) => ({ ...skill })));
-    setNewSkill("");
     setErrors({});
     onClose();
   };
-
-  const activeList = isEditing ? draft : skills;
 
   return (
     <SectionWrapper
@@ -88,20 +78,36 @@ function SkillsSectionContainer({ skills, isEditing, isLocked, onEdit, onClose }
         />
       }
     >
-      <SkillsSectionList items={activeList} isEditing={isEditing} onRemove={handleRemoveDraft} />
-      {errors._error && <FieldError message={errors._error} />}
       {isEditing && (
         <SkillsSectionForm
-          value={newSkill}
-          onChange={(value) => {
-            setNewSkill(value);
-            if (errors.name) {
-              setErrors((prev) => ({ ...prev, name: "" }));
+          value={draft}
+          onChange={(next) => {
+            setDraft(next);
+            if (errors.list) {
+              setErrors((prev) => ({ ...prev, list: "" }));
             }
           }}
-          onAdd={handleAdd}
-          error={errors.name}
+          error={errors.list}
         />
+      )}
+      {!isEditing && (
+        <>
+          {skills.length === 0 ? (
+            <p className="text-sm text-ink-faint">Add at least 5 skills.</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {skills.map((skill) => (
+                <span
+                  key={skill.id}
+                  className="inline-flex items-center gap-2 rounded-full bg-surface-2 px-3 py-1 text-xs font-semibold text-ink"
+                >
+                  {skill.name}
+                </span>
+              ))}
+            </div>
+          )}
+          {errors._error && <FieldError message={errors._error} />}
+        </>
       )}
     </SectionWrapper>
   );

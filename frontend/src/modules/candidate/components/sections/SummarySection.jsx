@@ -20,6 +20,10 @@ function SummarySection({ summary, isEditing, isLocked, onEdit, onClose }) {
   }, [isEditing, summary]);
 
   const handleSave = async () => {
+    if (!draft.trim()) {
+      setErrors((prev) => ({ ...prev, summary: "Please add a summary before saving." }));
+      return;
+    }
     try {
       await updateProfile({ summary: draft }).unwrap();
       toast.success("Summary updated.");
@@ -59,12 +63,17 @@ function SummarySection({ summary, isEditing, isLocked, onEdit, onClose }) {
             rows={4}
             value={draft}
             onChange={(event) => {
-              setDraft(event.target.value);
-              if (errors.summary) {
+              const nextValue = event.target.value;
+              setDraft(nextValue);
+              if (errors.summary && nextValue.trim()) {
                 setErrors((prev) => ({ ...prev, summary: "" }));
               }
             }}
-            className="mt-1 w-full rounded-xl border border-surface-3 bg-surface-inverse px-3 py-2.5 text-sm text-ink shadow-sm focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-200"
+            className={`mt-1 w-full rounded-xl border bg-surface-inverse px-3 py-2.5 text-sm text-ink shadow-sm focus:outline-none focus:ring-2 ${
+              errors.summary
+                ? "border-danger focus:border-danger focus:ring-danger/20"
+                : "border-surface-3 focus:border-brand-300 focus:ring-brand-200"
+            }`}
             placeholder="Write 2-3 lines about your strengths and achievements."
           />
           <FieldError message={errors.summary || errors._error} />

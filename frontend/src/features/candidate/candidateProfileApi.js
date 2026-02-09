@@ -26,6 +26,10 @@ export const candidateProfileApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["CandidateProfile"],
     }),
+    getSkillSuggestions: builder.query({
+      query: (q) => `/api/skills/suggest/?q=${encodeURIComponent(q ?? "")}`,
+      keepUnusedDataFor: 300,
+    }),
     createSkill: builder.mutation({
       query: (payload) => ({
         url: "/api/candidate/profile/skills/",
@@ -149,6 +153,7 @@ export const {
   useGetProfileOverviewQuery,
   useUpdateProfileMutation,
   useUpdateBasicDetailsMutation,
+  useGetSkillSuggestionsQuery,
   useCreateSkillMutation,
   useDeleteSkillMutation,
   useCreateEmploymentMutation,
