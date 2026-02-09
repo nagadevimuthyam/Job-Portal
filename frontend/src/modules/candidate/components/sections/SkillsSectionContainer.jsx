@@ -37,8 +37,11 @@ function SkillsSectionContainer({ skills, isEditing, isLocked, onEdit, onClose }
       }));
       return;
     }
+    const existingIds = new Set(skills.map((skill) => skill.id));
     const draftIds = new Set(draft.filter((skill) => skill.id).map((skill) => skill.id));
-    const toCreate = draft.filter((skill) => !skill.id);
+    const toCreate = draft.filter(
+      (skill) => !skill.id || !existingIds.has(skill.id)
+    );
     const toDelete = skills.filter((skill) => !draftIds.has(skill.id));
 
     try {

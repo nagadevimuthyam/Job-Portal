@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import SkillInput from "./SkillInput";
 import SkillDropdown from "./SkillDropdown";
 import SkillChips from "./SkillChips";
@@ -17,6 +17,8 @@ export default function SkillMultiSelect({
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(0);
+  const anchorRef = useRef(null);
+  const [anchorRect, setAnchorRect] = useState(null);
   const rawQuery = query.trim();
   const debouncedQuery = useDebouncedValue(rawQuery, 200);
   const suggestionsEnabled = isOpen && debouncedQuery.length >= 1;
@@ -115,6 +117,21 @@ export default function SkillMultiSelect({
     isOpen && rawQuery.length > 0 && (dropdownItems.length > 0 || isLoading);
 
   useEffect(() => {
+    if (!showDropdown || !anchorRef.current) return;
+    const updateRect = () => {
+      const rect = anchorRef.current.getBoundingClientRect();
+      setAnchorRect(rect);
+    };
+    updateRect();
+    window.addEventListener("scroll", updateRect, true);
+    window.addEventListener("resize", updateRect);
+    return () => {
+      window.removeEventListener("scroll", updateRect, true);
+      window.removeEventListener("resize", updateRect);
+    };
+  }, [showDropdown]);
+
+  useEffect(() => {
     if (highlightIndex >= dropdownItems.length) {
       setHighlightIndex(0);
     }
@@ -125,7 +142,7 @@ export default function SkillMultiSelect({
       <div className={`rounded-xl border ${error ? "border-danger" : "border-surface-3"} p-3`}>
         <SkillChips items={value} onRemove={handleRemove} />
       </div>
-      <div className="relative">
+      <div className="relative z-30" ref={anchorRef}>
         <SkillInput
           value={query}
           onChange={(next) => {
@@ -146,6 +163,7 @@ export default function SkillMultiSelect({
           onSelect={handleSelect}
           onHover={setHighlightIndex}
           isOpen={showDropdown}
+          anchorRect={anchorRect}
         />
       </div>
       {minItems > 0 && (

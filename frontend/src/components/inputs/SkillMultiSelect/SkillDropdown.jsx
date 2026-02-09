@@ -1,14 +1,24 @@
+import { createPortal } from "react-dom";
+
 export default function SkillDropdown({
   items,
   highlightIndex,
   onSelect,
   onHover,
   isOpen,
+  anchorRect,
 }) {
-  if (!isOpen || items.length === 0) return null;
+  if (!isOpen || items.length === 0 || !anchorRect) return null;
 
-  return (
-    <div className="absolute z-20 mt-2 w-full rounded-xl border border-surface-3 bg-white shadow-lg">
+  return createPortal(
+    <div
+      className="fixed z-[9999] rounded-xl border border-surface-3 bg-white shadow-lg"
+      style={{
+        top: `${anchorRect.bottom + 8}px`,
+        left: `${anchorRect.left}px`,
+        width: `${anchorRect.width}px`,
+      }}
+    >
       <ul className="max-h-56 overflow-auto py-1 text-sm">
         {items.map((item, index) => (
           <li key={`${item.label}-${index}`}>
@@ -33,6 +43,7 @@ export default function SkillDropdown({
           </li>
         ))}
       </ul>
-    </div>
+    </div>,
+    document.body
   );
 }
