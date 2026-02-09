@@ -7,7 +7,7 @@ from .views import (
     CandidatePhotoUploadView,
     CandidateSkillCreateView,
     CandidateSkillDeleteView,
-    SkillSuggestionView,
+    CandidateSkillBulkUpsertView,
     CandidateEmploymentCreateView,
     CandidateEmploymentUpdateDeleteView,
     CandidateEducationCreateView,
@@ -23,8 +23,12 @@ urlpatterns = [
     path("profile/overview/", CandidateProfileOverviewView.as_view(), name="candidate-profile-overview"),
     path("profile/basic-details/", CandidateBasicDetailsView.as_view(), name="candidate-profile-basic"),
     path("profile/photo/", CandidatePhotoUploadView.as_view(), name="candidate-profile-photo"),
-    path("skills/suggest/", SkillSuggestionView.as_view(), name="skill-suggest"),
     path("profile/skills/", CandidateSkillCreateView.as_view(), name="candidate-skill-create"),
+    path(
+        "profile/skills/bulk/",
+        CandidateSkillBulkUpsertView.as_view(),
+        name="candidate-skill-bulk",
+    ),
     path(
         "profile/skills/<uuid:skill_id>/",
         CandidateSkillDeleteView.as_view(),

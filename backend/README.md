@@ -34,6 +34,9 @@ Candidate:
 - POST /api/candidate/register/
 - GET/PUT /api/candidate/profile/
 
+Skills:
+- GET /api/skills/suggest/?q=react&limit=10
+
 Docs:
 - /api/docs/
 
@@ -49,3 +52,5 @@ Docs:
 - The master admin is seeded using env vars: MASTER_ADMIN_EMAIL, MASTER_ADMIN_PASSWORD, MASTER_ADMIN_NAME
 - Organization name and code are validated for uniqueness
 - Total Candidates in the master dashboard is the count of all candidate profiles
+- ESCO skills seed file path: backend/seed/esco/skills.csv
+- Import command: python manage.py import_esco_skills --path backend/seed/esco/skills.csv
