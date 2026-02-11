@@ -1,10 +1,4 @@
-export const availabilityOptions = [
-  "15 Days or less",
-  "1 Month",
-  "2 Months",
-  "3 Months",
-  "More than 3 Months",
-];
+export { AVAILABILITY_OPTIONS as availabilityOptions } from "../../../../shared/constants/profileOptions";
 
 export const sectionMap = {
   personal_full_name: "personal",

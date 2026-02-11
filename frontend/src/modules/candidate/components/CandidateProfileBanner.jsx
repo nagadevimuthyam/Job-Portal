@@ -12,7 +12,8 @@ import ProfileBannerHeader from "./banner/ProfileBannerHeader";
 import BasicInfoBlock from "./banner/BasicInfoBlock";
 import MissingDetailsPanel from "./banner/MissingDetailsPanel";
 import BannerMeta from "./banner/BannerMeta";
-import { availabilityOptions, detailIconMap, sectionMap } from "./banner/bannerConfig";
+import { detailIconMap, sectionMap } from "./banner/bannerConfig";
+import { getLabelForValue, WORK_STATUS_OPTIONS, AVAILABILITY_OPTIONS } from "../../../shared/constants/profileOptions";
 
 export default function CandidateProfileBanner({ onJumpToSection }) {
   const { data, isLoading } = useGetProfileOverviewQuery();
@@ -65,7 +66,9 @@ export default function CandidateProfileBanner({ onJumpToSection }) {
       {
         key: "availability",
         icon: detailIconMap.availability,
-        value: profile.availability_to_join || "Add availability",
+        value:
+          getLabelForValue(profile.availability_to_join, AVAILABILITY_OPTIONS) ||
+          "Add availability",
       },
     ],
     [formattedLocation, profile.email, profile.availability_to_join]
@@ -74,7 +77,11 @@ export default function CandidateProfileBanner({ onJumpToSection }) {
   const rightRows = useMemo(
     () => [
       { key: "phone", icon: detailIconMap.phone, value: profile.phone || "Add phone" },
-      { key: "work", icon: detailIconMap.work, value: profile.work_status || "Add work status" },
+      {
+        key: "work",
+        icon: detailIconMap.work,
+        value: getLabelForValue(profile.work_status, WORK_STATUS_OPTIONS) || "Add work status",
+      },
     ],
     [profile.phone, profile.work_status]
   );
@@ -180,7 +187,6 @@ export default function CandidateProfileBanner({ onJumpToSection }) {
             email: profile.email || "",
             availability_to_join: profile.availability_to_join || "",
           }}
-          availabilityOptions={availabilityOptions}
         />
       )}
     </Card>

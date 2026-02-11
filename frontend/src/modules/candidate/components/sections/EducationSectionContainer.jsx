@@ -15,8 +15,10 @@ import {
 const blankEducation = {
   degree: "",
   institution: "",
+  course_type: "",
   start_year: "",
   end_year: "",
+  marks_percentage: "",
 };
 
 const stripUiFields = (item) => {
@@ -82,6 +84,31 @@ function EducationSectionContainer({ items, isEditing, isLocked, onEdit, onClose
       setFormError("Please add at least one education entry before saving.");
       return;
     }
+    const validationErrors = {};
+    draft.forEach((item, index) => {
+      const itemErrors = {};
+      if (!item.degree) itemErrors.degree = "Education is required.";
+      if (!item.institution?.trim())
+        itemErrors.institution = "University/Institute is required.";
+      if (!item.course_type) itemErrors.course_type = "Course type is required.";
+      if (!item.start_year) itemErrors.start_year = "Start year is required.";
+      if (!item.end_year) itemErrors.end_year = "End year is required.";
+      if (item.start_year && item.end_year && Number(item.start_year) > Number(item.end_year)) {
+        itemErrors.end_year = "End year must be after start year.";
+      }
+      if (item.marks_percentage !== "" && item.marks_percentage !== null) {
+        const marks = Number(item.marks_percentage);
+        if (Number.isNaN(marks) || marks < 0 || marks > 100) {
+          itemErrors.marks_percentage = "Marks/Percentage must be between 0 and 100.";
+        }
+      }
+      if (Object.keys(itemErrors).length) validationErrors[index] = itemErrors;
+    });
+    if (Object.keys(validationErrors).length) {
+      setErrors(validationErrors);
+      toast.error("Fix the highlighted fields.");
+      return;
+    }
     try {
       const createPayloads = draft.filter((item) => !item.id);
       const updatePayloads = draft.filter((item) => item.id && item._status === "updated");
@@ -91,6 +118,10 @@ function EducationSectionContainer({ items, isEditing, isLocked, onEdit, onClose
             ...stripUiFields(item),
             start_year: Number(item.start_year || 0),
             end_year: Number(item.end_year || 0),
+            marks_percentage:
+              item.marks_percentage === "" || item.marks_percentage === null
+                ? null
+                : Number(item.marks_percentage),
           }).unwrap()
         ),
         ...updatePayloads.map((item) =>
@@ -99,6 +130,10 @@ function EducationSectionContainer({ items, isEditing, isLocked, onEdit, onClose
             ...stripUiFields(item),
             start_year: Number(item.start_year || 0),
             end_year: Number(item.end_year || 0),
+            marks_percentage:
+              item.marks_percentage === "" || item.marks_percentage === null
+                ? null
+                : Number(item.marks_percentage),
           }).unwrap()
         ),
         ...removedIds.map((id) => deleteEducation(id).unwrap()),

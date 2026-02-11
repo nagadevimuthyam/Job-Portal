@@ -2,8 +2,12 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
+import {
+  WORK_STATUS_OPTIONS,
+  AVAILABILITY_OPTIONS,
+  mapLegacyValue,
+} from "../../../shared/constants/profileOptions";
 
-const workStatusOptions = ["Fresher", "Experienced"];
 const locationCountryOptions = ["India", "Outside India"];
 
 export default function BasicDetailsModal({
@@ -12,7 +16,6 @@ export default function BasicDetailsModal({
   onSave,
   isSaving,
   initialValues,
-  availabilityOptions,
 }) {
   const [form, setForm] = useState({
     full_name: "",
@@ -29,12 +32,18 @@ export default function BasicDetailsModal({
     if (isOpen) {
       setForm({
         full_name: initialValues?.full_name || "",
-        work_status: initialValues?.work_status || "",
+        work_status: mapLegacyValue(
+          initialValues?.work_status,
+          WORK_STATUS_OPTIONS
+        ),
         location_country: initialValues?.location_country || "India",
         location: initialValues?.location || "",
         phone: initialValues?.phone || "",
         email: initialValues?.email || "",
-        availability_to_join: initialValues?.availability_to_join || "",
+        availability_to_join: mapLegacyValue(
+          initialValues?.availability_to_join,
+          AVAILABILITY_OPTIONS
+        ),
       });
       setErrors({});
     }
@@ -96,16 +105,21 @@ export default function BasicDetailsModal({
             <p className="text-sm font-semibold text-ink-soft">Work status</p>
             <p className="text-xs text-ink-faint">We will personalise your experience based on this</p>
             <div className="mt-2 flex gap-6">
-              {workStatusOptions.map((option) => (
-                <label key={option} className="flex items-center gap-2 text-sm text-ink">
+              {WORK_STATUS_OPTIONS.map((option) => (
+                <label
+                  key={option.value}
+                  className="flex items-center gap-2 text-sm text-ink"
+                >
                   <input
                     type="radio"
                     name="work_status"
-                    value={option}
-                    checked={form.work_status === option}
-                    onChange={() => setForm({ ...form, work_status: option })}
+                    value={option.value}
+                    checked={form.work_status === option.value}
+                    onChange={() =>
+                      setForm({ ...form, work_status: option.value })
+                    }
                   />
-                  {option}
+                  {option.label}
                 </label>
               ))}
             </div>
@@ -175,18 +189,20 @@ export default function BasicDetailsModal({
             <p className="text-sm font-semibold text-ink-soft">Availability to join</p>
             <p className="text-xs text-ink-faint">Let recruiters know your availability to join</p>
             <div className="mt-2 flex flex-wrap gap-2">
-              {availabilityOptions.map((option) => (
+              {AVAILABILITY_OPTIONS.map((option) => (
                 <button
-                  key={option}
+                  key={option.value}
                   type="button"
                   className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                    form.availability_to_join === option
+                    form.availability_to_join === option.value
                       ? "border-brand-500 bg-brand-50 text-brand-700"
                       : "border-surface-3 text-ink-faint"
                   }`}
-                  onClick={() => setForm({ ...form, availability_to_join: option })}
+                  onClick={() =>
+                    setForm({ ...form, availability_to_join: option.value })
+                  }
                 >
-                  {option}
+                  {option.label}
                 </button>
               ))}
             </div>
