@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from django.db.models import F
+from django.utils import timezone
 
 from apps.masteradmin.permissions import IsCandidate
 from .models import (
@@ -28,6 +29,11 @@ from .serializers import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def touch_profile(profile):
+    profile.updated_at = timezone.now()
+    profile.save(update_fields=["updated_at"])
 
 
 class CandidateRegisterView(APIView):
@@ -179,6 +185,7 @@ class CandidateSkillCreateView(APIView):
                 )
                 if not created:
                     Skill.objects.filter(id=skill_obj.id).update(popularity=F("popularity") + 1)
+            touch_profile(profile)
             return Response(CandidateSkillSerializer(skill).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -190,6 +197,7 @@ class CandidateSkillDeleteView(APIView):
         profile = get_object_or_404(CandidateProfile, user=request.user)
         skill = get_object_or_404(CandidateSkill, id=skill_id, profile=profile)
         skill.delete()
+        touch_profile(profile)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -244,6 +252,7 @@ class CandidateSkillBulkUpsertView(APIView):
             if not created:
                 Skill.objects.filter(id=skill_obj.id).update(popularity=F("popularity") + 1)
 
+        touch_profile(profile)
         updated = CandidateSkill.objects.filter(profile=profile)
         return Response(CandidateSkillSerializer(updated, many=True).data, status=status.HTTP_200_OK)
 
@@ -260,6 +269,7 @@ class CandidateEmploymentCreateView(APIView):
             employment = CandidateEmployment.objects.create(
                 profile=profile, **serializer.validated_data
             )
+            touch_profile(profile)
             return Response(
                 CandidateEmploymentSerializer(employment).data, status=status.HTTP_201_CREATED
             )
@@ -275,6 +285,7 @@ class CandidateEmploymentUpdateDeleteView(APIView):
         serializer = CandidateEmploymentSerializer(employment, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            touch_profile(profile)
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -282,6 +293,7 @@ class CandidateEmploymentUpdateDeleteView(APIView):
         profile = get_object_or_404(CandidateProfile, user=request.user)
         employment = get_object_or_404(CandidateEmployment, id=employment_id, profile=profile)
         employment.delete()
+        touch_profile(profile)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -293,6 +305,7 @@ class CandidateEducationCreateView(APIView):
         serializer = CandidateEducationSerializer(data=request.data)
         if serializer.is_valid():
             education = CandidateEducation.objects.create(profile=profile, **serializer.validated_data)
+            touch_profile(profile)
             return Response(
                 CandidateEducationSerializer(education).data, status=status.HTTP_201_CREATED
             )
@@ -308,6 +321,7 @@ class CandidateEducationUpdateDeleteView(APIView):
         serializer = CandidateEducationSerializer(education, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            touch_profile(profile)
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -315,6 +329,7 @@ class CandidateEducationUpdateDeleteView(APIView):
         profile = get_object_or_404(CandidateProfile, user=request.user)
         education = get_object_or_404(CandidateEducation, id=education_id, profile=profile)
         education.delete()
+        touch_profile(profile)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -326,6 +341,7 @@ class CandidateProjectCreateView(APIView):
         serializer = CandidateProjectSerializer(data=request.data)
         if serializer.is_valid():
             project = CandidateProject.objects.create(profile=profile, **serializer.validated_data)
+            touch_profile(profile)
             return Response(
                 CandidateProjectSerializer(project).data, status=status.HTTP_201_CREATED
             )
@@ -341,6 +357,7 @@ class CandidateProjectUpdateDeleteView(APIView):
         serializer = CandidateProjectSerializer(project, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            touch_profile(profile)
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -348,6 +365,7 @@ class CandidateProjectUpdateDeleteView(APIView):
         profile = get_object_or_404(CandidateProfile, user=request.user)
         project = get_object_or_404(CandidateProject, id=project_id, profile=profile)
         project.delete()
+        touch_profile(profile)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

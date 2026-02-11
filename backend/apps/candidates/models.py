@@ -92,8 +92,10 @@ class CandidateEducation(models.Model):
     )
     degree = models.CharField(max_length=200)
     institution = models.CharField(max_length=200)
+    course_type = models.CharField(max_length=40, blank=True)
     start_year = models.PositiveSmallIntegerField()
     end_year = models.PositiveSmallIntegerField()
+    marks_percentage = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
 
     class Meta:
         ordering = ["-end_year", "-start_year"]
@@ -113,6 +115,11 @@ class CandidateProject(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     link = models.URLField(blank=True)
+    status = models.CharField(max_length=20, blank=True)
+    worked_from_year = models.PositiveSmallIntegerField(null=True, blank=True)
+    worked_from_month = models.PositiveSmallIntegerField(null=True, blank=True)
+    worked_till_year = models.PositiveSmallIntegerField(null=True, blank=True)
+    worked_till_month = models.PositiveSmallIntegerField(null=True, blank=True)
 
     class Meta:
         ordering = ["title"]
