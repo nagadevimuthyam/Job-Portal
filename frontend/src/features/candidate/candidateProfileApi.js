@@ -26,6 +26,18 @@ export const candidateProfileApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["CandidateProfile"],
     }),
+    getPersonalDetails: builder.query({
+      query: () => "/api/candidate/profile/personal-details/",
+      providesTags: ["PersonalDetails"],
+    }),
+    updatePersonalDetails: builder.mutation({
+      query: (payload) => ({
+        url: "/api/candidate/profile/personal-details/",
+        method: "PATCH",
+        body: payload,
+      }),
+      invalidatesTags: ["CandidateProfile", "PersonalDetails"],
+    }),
     getSkillSuggestions: builder.query({
       query: (q) => `/api/skills/suggest/?q=${encodeURIComponent(q ?? "")}`,
       keepUnusedDataFor: 300,
@@ -153,6 +165,8 @@ export const {
   useGetProfileOverviewQuery,
   useUpdateProfileMutation,
   useUpdateBasicDetailsMutation,
+  useGetPersonalDetailsQuery,
+  useUpdatePersonalDetailsMutation,
   useGetSkillSuggestionsQuery,
   useCreateSkillMutation,
   useDeleteSkillMutation,

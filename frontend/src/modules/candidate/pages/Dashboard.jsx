@@ -174,14 +174,6 @@ export default function CandidateDashboard() {
 
           <div ref={sectionRefs.personal}>
             <PersonalDetailsSection
-              fullName={profile?.full_name || ""}
-              email={profile?.email || ""}
-              phone={profile?.phone || ""}
-              location={profile?.location || ""}
-              totalExperienceYears={profile?.total_experience_years ?? 0}
-              totalExperienceMonths={profile?.total_experience_months ?? 0}
-              noticePeriodDays={profile?.notice_period_days ?? ""}
-              expectedSalary={profile?.expected_salary ?? ""}
               isEditing={activeSection === "personal"}
               isLocked={isLocked("personal")}
               onEdit={() => setActiveSection("personal")}

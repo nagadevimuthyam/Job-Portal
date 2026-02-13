@@ -11,6 +11,21 @@ const AVAILABILITY_OPTIONS = [
   { label: "More than 3 Months", value: "MORE_THAN_3_MONTHS" },
 ];
 
+const GENDER_OPTIONS = [
+  { label: "Male", value: "MALE" },
+  { label: "Female", value: "FEMALE" },
+  { label: "Other", value: "OTHER" },
+  { label: "Prefer not to say", value: "PREFER_NOT_TO_SAY" },
+];
+
+const MARITAL_STATUS_OPTIONS = [
+  { label: "Single", value: "SINGLE" },
+  { label: "Married", value: "MARRIED" },
+  { label: "Divorced", value: "DIVORCED" },
+  { label: "Widowed", value: "WIDOWED" },
+  { label: "Prefer not to say", value: "PREFER_NOT_TO_SAY" },
+];
+
 const PROJECT_STATUS_OPTIONS = [
   { label: "In progress", value: "IN_PROGRESS" },
   { label: "Finished", value: "FINISHED" },
@@ -59,6 +74,8 @@ const getLabelForValue = (value, options) => {
 export {
   WORK_STATUS_OPTIONS,
   AVAILABILITY_OPTIONS,
+  GENDER_OPTIONS,
+  MARITAL_STATUS_OPTIONS,
   PROJECT_STATUS_OPTIONS,
   MONTH_OPTIONS,
   getYearOptions,

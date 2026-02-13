@@ -37,12 +37,14 @@ export default function CandidateProfileBanner({ onJumpToSection }) {
   const topMissing = useMemo(() => missingDetails.slice(0, 3), [missingDetails]);
 
   const formattedLocation = useMemo(() => {
-    const city = profile.location?.trim();
-    const rawCountry = profile.location_country?.trim();
+    const city = profile.current_city?.trim() || profile.location?.trim();
+    const state = profile.current_state?.trim();
+    const rawCountry = profile.country?.trim() || profile.location_country?.trim();
     const country = rawCountry?.toLowerCase() === "india" ? "INDIA" : rawCountry;
-    if (city && country) return `${city}, ${country}`;
-    return city || country || "Add location";
-  }, [profile.location, profile.location_country]);
+    const parts = [city, state, country].filter(Boolean);
+    if (parts.length) return parts.join(", ");
+    return "Add location";
+  }, [profile.current_city, profile.current_state, profile.country, profile.location, profile.location_country]);
 
   const formattedUpdated = useMemo(() => {
     if (!lastUpdated) return "-";
@@ -61,9 +63,9 @@ export default function CandidateProfileBanner({ onJumpToSection }) {
 
   const leftRows = useMemo(
     () => [
-      { key: "location", icon: detailIconMap.location, value: formattedLocation },
-      { key: "email", icon: detailIconMap.email, value: profile.email || "Add email" },
-      {
+          { key: "location", icon: detailIconMap.location, value: formattedLocation },
+          { key: "email", icon: detailIconMap.email, value: profile.email || "Add email" },
+          {
         key: "availability",
         icon: detailIconMap.availability,
         value:
@@ -74,16 +76,23 @@ export default function CandidateProfileBanner({ onJumpToSection }) {
     [formattedLocation, profile.email, profile.availability_to_join]
   );
 
+  const experienceLabel = useMemo(() => {
+    const years = Number(profile.total_experience_years || 0);
+    if (profile.work_status === "FRESHER" && years === 0) return "Fresher";
+    if (years === 1) return "1 Year";
+    return `${years} Years`;
+  }, [profile.total_experience_years, profile.work_status]);
+
   const rightRows = useMemo(
     () => [
       { key: "phone", icon: detailIconMap.phone, value: profile.phone || "Add phone" },
       {
         key: "work",
         icon: detailIconMap.work,
-        value: getLabelForValue(profile.work_status, WORK_STATUS_OPTIONS) || "Add work status",
+        value: experienceLabel || "Add experience",
       },
     ],
-    [profile.phone, profile.work_status]
+    [profile.phone, experienceLabel]
   );
 
   useEffect(() => {
@@ -179,13 +188,17 @@ export default function CandidateProfileBanner({ onJumpToSection }) {
           onSave={handleSaveBasicDetails}
           isSaving={isSaving}
           initialValues={{
-            full_name: profile.full_name || "",
-            work_status: profile.work_status || "",
             location_country: profile.location_country || "India",
-            location: profile.location || "",
+            current_city: profile.current_city || profile.location || "",
+            current_state: profile.current_state || "",
+            country: profile.country || profile.location_country || "India",
             phone: profile.phone || "",
             email: profile.email || "",
+            work_status: profile.work_status || "",
+            total_experience_years: profile.total_experience_years ?? "",
+            total_experience_months: profile.total_experience_months ?? "",
             availability_to_join: profile.availability_to_join || "",
+            notice_period_days: profile.notice_period_days ?? "",
           }}
         />
       )}
