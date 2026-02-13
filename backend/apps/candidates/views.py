@@ -22,6 +22,7 @@ from .serializers import (
     CandidateProfileSerializer,
     CandidateProfileUpdateSerializer,
     CandidateBasicDetailsSerializer,
+    CandidatePersonalDetailsSerializer,
     CandidateSkillSerializer,
     CandidateEmploymentSerializer,
     CandidateEducationSerializer,
@@ -464,6 +465,49 @@ class CandidateBasicDetailsView(APIView):
                 )
         return Response(
             {"detail": serializer.errors, "code": "BASIC_DETAILS_INVALID_PAYLOAD"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class CandidatePersonalDetailsView(APIView):
+    permission_classes = [IsAuthenticated, IsCandidate]
+
+    def get(self, request):
+        try:
+            profile = CandidateProfile.objects.get(user=request.user)
+        except CandidateProfile.DoesNotExist:
+            return Response(
+                {"detail": "Profile not found.", "code": "PROFILE_NOT_FOUND"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        serializer = CandidatePersonalDetailsSerializer(profile)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, request):
+        try:
+            profile = CandidateProfile.objects.get(user=request.user)
+        except CandidateProfile.DoesNotExist:
+            return Response(
+                {"detail": "Profile not found.", "code": "PROFILE_NOT_FOUND"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        serializer = CandidatePersonalDetailsSerializer(profile, data=request.data, partial=True)
+        if serializer.is_valid():
+            try:
+                serializer.save()
+                profile.refresh_from_db()
+                return Response(
+                    CandidatePersonalDetailsSerializer(profile).data,
+                    status=status.HTTP_200_OK,
+                )
+            except Exception:
+                logger.exception("Personal details update failed for user %s", request.user.id)
+                return Response(
+                    {"detail": "Unable to update personal details.", "code": "PERSONAL_DETAILS_ERROR"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
+        return Response(
+            {"detail": serializer.errors, "code": "PERSONAL_DETAILS_INVALID_PAYLOAD"},
             status=status.HTTP_400_BAD_REQUEST,
         )
 

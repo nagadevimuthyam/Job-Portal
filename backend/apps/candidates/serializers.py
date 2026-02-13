@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.utils import timezone
 from apps.accounts.models import User
 from .models import (
     CandidateProfile,
@@ -58,6 +59,14 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
             "phone",
             "location",
             "location_country",
+            "gender",
+            "dob",
+            "current_city",
+            "current_state",
+            "country",
+            "nationality",
+            "marital_status",
+            "work_authorization_country",
             "summary",
             "work_status",
             "availability_to_join",
@@ -65,6 +74,7 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
             "total_experience_months",
             "notice_period_days",
             "expected_salary",
+            "salary_currency",
             "resume_file",
             "resume_url",
             "resume_filename",
@@ -104,6 +114,14 @@ class CandidateProfileUpdateSerializer(serializers.ModelSerializer):
             "phone",
             "location",
             "location_country",
+            "gender",
+            "dob",
+            "current_city",
+            "current_state",
+            "country",
+            "nationality",
+            "marital_status",
+            "work_authorization_country",
             "summary",
             "work_status",
             "availability_to_join",
@@ -111,6 +129,7 @@ class CandidateProfileUpdateSerializer(serializers.ModelSerializer):
             "total_experience_months",
             "notice_period_days",
             "expected_salary",
+            "salary_currency",
         )
 
     def validate(self, attrs):
@@ -139,17 +158,85 @@ class CandidateProfileUpdateSerializer(serializers.ModelSerializer):
         return attrs
 
 
-class CandidateBasicDetailsSerializer(serializers.ModelSerializer):
+class CandidatePersonalDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = CandidateProfile
         fields = (
             "full_name",
+            "email",
+            "phone",
+            "gender",
+            "dob",
+            "current_city",
+            "current_state",
+            "country",
+            "nationality",
+            "marital_status",
+            "work_authorization_country",
+            "availability_to_join",
+            "location",
+            "total_experience_years",
+            "total_experience_months",
+            "notice_period_days",
+            "expected_salary",
+            "salary_currency",
+        )
+
+    def validate(self, attrs):
+        data = {**attrs}
+        instance = getattr(self, "instance", None)
+        if instance:
+            data.setdefault("gender", instance.gender)
+            data.setdefault("marital_status", instance.marital_status)
+            data.setdefault("dob", instance.dob)
+
+        errors = {}
+        currency_allowed = {"INR", "USD", "", None}
+        gender_allowed = {"MALE", "FEMALE", "OTHER", "PREFER_NOT_TO_SAY", "", None}
+        marital_allowed = {
+            "SINGLE",
+            "MARRIED",
+            "DIVORCED",
+            "WIDOWED",
+            "PREFER_NOT_TO_SAY",
+            "",
+            None,
+        }
+
+        if data.get("gender") not in gender_allowed:
+            errors["gender"] = "Invalid gender."
+        if data.get("marital_status") not in marital_allowed:
+            errors["marital_status"] = "Invalid marital status."
+        if data.get("salary_currency") not in currency_allowed:
+            errors["salary_currency"] = "Invalid salary currency."
+
+        dob = data.get("dob")
+        if dob:
+            today = timezone.now().date()
+            if dob > today:
+                errors["dob"] = "Date of birth cannot be in the future."
+
+        if errors:
+            raise serializers.ValidationError(errors)
+        return attrs
+
+
+class CandidateBasicDetailsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CandidateProfile
+        fields = (
             "work_status",
+            "availability_to_join",
             "location_country",
             "location",
+            "current_city",
+            "current_state",
+            "country",
             "phone",
             "email",
-            "availability_to_join",
+            "total_experience_years",
+            "total_experience_months",
+            "notice_period_days",
         )
 
     def validate(self, attrs):
@@ -157,9 +244,16 @@ class CandidateBasicDetailsSerializer(serializers.ModelSerializer):
         instance = getattr(self, "instance", None)
         if instance:
             data.setdefault("work_status", instance.work_status)
+            data.setdefault("total_experience_years", instance.total_experience_years)
             data.setdefault("availability_to_join", instance.availability_to_join)
 
-        work_status_allowed = {"FRESHER", "EXPERIENCED", ""}
+        errors = {}
+        work_status_allowed = {"FRESHER", "EXPERIENCED"}
+        if not data.get("work_status"):
+            errors["work_status"] = "Select work status."
+        elif data.get("work_status") not in work_status_allowed:
+            errors["work_status"] = "Invalid work status."
+
         availability_allowed = {
             "15_DAYS_OR_LESS",
             "1_MONTH",
@@ -167,14 +261,31 @@ class CandidateBasicDetailsSerializer(serializers.ModelSerializer):
             "3_MONTHS",
             "MORE_THAN_3_MONTHS",
             "",
+            None,
         }
-        errors = {}
-        if data.get("work_status") not in work_status_allowed:
-            errors["work_status"] = "Invalid work status."
         if data.get("availability_to_join") not in availability_allowed:
             errors["availability_to_join"] = "Invalid availability option."
+
+        if data.get("work_status") == "EXPERIENCED":
+            years = data.get("total_experience_years")
+            if years is None or years < 1:
+                errors["total_experience_years"] = "Select your total experience."
+        if data.get("work_status") == "FRESHER":
+            data["total_experience_years"] = 0
+            data["total_experience_months"] = 0
+
         if errors:
             raise serializers.ValidationError(errors)
+        attrs.update(
+            {
+                "total_experience_years": data.get(
+                    "total_experience_years", attrs.get("total_experience_years")
+                ),
+                "total_experience_months": data.get(
+                    "total_experience_months", attrs.get("total_experience_months")
+                ),
+            }
+        )
         return attrs
 
 

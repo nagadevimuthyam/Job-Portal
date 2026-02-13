@@ -19,6 +19,14 @@ class CandidateProfile(models.Model):
     summary = models.TextField(blank=True)
     work_status = models.CharField(max_length=20, blank=True)
     availability_to_join = models.CharField(max_length=30, blank=True)
+    gender = models.CharField(max_length=20, blank=True)
+    dob = models.DateField(null=True, blank=True)
+    current_city = models.CharField(max_length=120, blank=True)
+    current_state = models.CharField(max_length=120, blank=True)
+    country = models.CharField(max_length=120, blank=True)
+    nationality = models.CharField(max_length=120, blank=True)
+    marital_status = models.CharField(max_length=20, blank=True)
+    work_authorization_country = models.CharField(max_length=120, blank=True)
     total_experience_years = models.PositiveSmallIntegerField(default=0)
     total_experience_months = models.PositiveSmallIntegerField(
         default=0,
@@ -26,6 +34,7 @@ class CandidateProfile(models.Model):
     )
     notice_period_days = models.PositiveIntegerField(null=True, blank=True)
     expected_salary = models.PositiveIntegerField(null=True, blank=True)
+    salary_currency = models.CharField(max_length=8, blank=True, default="INR")
     resume_file = models.FileField(upload_to="resumes/", null=True, blank=True)
     photo_file = models.FileField(upload_to="profile-photos/", null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)

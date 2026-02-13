@@ -4,6 +4,7 @@ from .views import (
     CandidateProfileView,
     CandidateProfileOverviewView,
     CandidateBasicDetailsView,
+    CandidatePersonalDetailsView,
     CandidatePhotoUploadView,
     CandidateSkillCreateView,
     CandidateSkillDeleteView,
@@ -22,6 +23,7 @@ urlpatterns = [
     path("profile/", CandidateProfileView.as_view(), name="candidate-profile"),
     path("profile/overview/", CandidateProfileOverviewView.as_view(), name="candidate-profile-overview"),
     path("profile/basic-details/", CandidateBasicDetailsView.as_view(), name="candidate-profile-basic"),
+    path("profile/personal-details/", CandidatePersonalDetailsView.as_view(), name="candidate-profile-personal"),
     path("profile/photo/", CandidatePhotoUploadView.as_view(), name="candidate-profile-photo"),
     path("profile/skills/", CandidateSkillCreateView.as_view(), name="candidate-skill-create"),
     path(
