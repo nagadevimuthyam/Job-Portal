@@ -1,7 +1,6 @@
 import { memo, useEffect, useState } from "react";
 import { toast } from "sonner";
 import SectionWrapper from "./SectionWrapper";
-import SectionActions from "./SectionActions";
 import SkillsSectionForm from "./SkillsSectionForm";
 import FieldError from "./FieldError";
 import parseApiErrors from "./parseApiErrors";
@@ -9,6 +8,8 @@ import {
   useCreateSkillMutation,
   useDeleteSkillMutation,
 } from "../../../../features/candidate/candidateProfileApi";
+import EditButton from "../shared/EditButton";
+import FormModal from "../shared/FormModal";
 
 function SkillsSectionContainer({ skills, isEditing, isLocked, onEdit, onClose }) {
   const [draft, setDraft] = useState([]);
@@ -67,21 +68,35 @@ function SkillsSectionContainer({ skills, isEditing, isLocked, onEdit, onClose }
   };
 
   return (
-    <SectionWrapper
-      title="Key Skills"
-      description="Top skills recruiters search for."
-      actions={
-        <SectionActions
-          isEditing={isEditing}
-          isLocked={isLocked}
-          onEdit={onEdit}
-          onCancel={handleCancel}
-          onSave={handleSave}
-          saveLabel="Save Skills"
-        />
-      }
-    >
-      {isEditing && (
+    <>
+      <SectionWrapper
+        title="Key Skills"
+        description="Top skills recruiters search for."
+        actions={<EditButton onClick={onEdit} disabled={isLocked} />}
+      >
+        {skills.length === 0 ? (
+          <p className="text-sm text-ink-faint">Add at least 5 skills.</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {skills.map((skill) => (
+              <span
+                key={skill.id}
+                className="inline-flex items-center gap-2 rounded-full bg-surface-2 px-3 py-1 text-xs font-semibold text-ink"
+              >
+                {skill.name}
+              </span>
+            ))}
+          </div>
+        )}
+      </SectionWrapper>
+      <FormModal
+        open={isEditing}
+        title="Key Skills"
+        onClose={handleCancel}
+        onSubmit={handleSave}
+        primaryLabel="Save Skills"
+        secondaryLabel="Cancel"
+      >
         <SkillsSectionForm
           value={draft}
           onChange={(next) => {
@@ -92,27 +107,9 @@ function SkillsSectionContainer({ skills, isEditing, isLocked, onEdit, onClose }
           }}
           error={errors.list}
         />
-      )}
-      {!isEditing && (
-        <>
-          {skills.length === 0 ? (
-            <p className="text-sm text-ink-faint">Add at least 5 skills.</p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {skills.map((skill) => (
-                <span
-                  key={skill.id}
-                  className="inline-flex items-center gap-2 rounded-full bg-surface-2 px-3 py-1 text-xs font-semibold text-ink"
-                >
-                  {skill.name}
-                </span>
-              ))}
-            </div>
-          )}
-          {errors._error && <FieldError message={errors._error} />}
-        </>
-      )}
-    </SectionWrapper>
+        {errors._error && <FieldError message={errors._error} />}
+      </FormModal>
+    </>
   );
 }
 

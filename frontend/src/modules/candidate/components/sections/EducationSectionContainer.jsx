@@ -1,7 +1,6 @@
 import { memo, useEffect, useState } from "react";
 import { toast } from "sonner";
 import SectionWrapper from "./SectionWrapper";
-import SectionActions from "./SectionActions";
 import EducationSectionForm from "./EducationSectionForm";
 import EducationSectionList from "./EducationSectionList";
 import FieldError from "./FieldError";
@@ -11,6 +10,8 @@ import {
   useUpdateEducationMutation,
   useDeleteEducationMutation,
 } from "../../../../features/candidate/candidateProfileApi";
+import EditButton from "../shared/EditButton";
+import FormModal from "../shared/FormModal";
 
 const blankEducation = {
   degree: "",
@@ -158,38 +159,35 @@ function EducationSectionContainer({ items, isEditing, isLocked, onEdit, onClose
     onClose();
   };
 
-  const activeList = isEditing ? draft : items;
+  const viewList = items;
 
   return (
-    <SectionWrapper
-      title="Education"
-      description="Add your latest qualifications."
-      actions={
-        <SectionActions
-          isEditing={isEditing}
-          isLocked={isLocked}
-          onEdit={onEdit}
-          onCancel={handleCancel}
-          onSave={handleSave}
-          saveLabel="Save Education"
+    <>
+      <SectionWrapper
+        title="Education"
+        description="Add your latest qualifications."
+        actions={<EditButton onClick={onEdit} disabled={isLocked} />}
+      >
+        <EducationSectionList items={viewList} />
+      </SectionWrapper>
+      <FormModal
+        open={isEditing}
+        title="Education"
+        onClose={handleCancel}
+        onSubmit={handleSave}
+        primaryLabel="Save Education"
+        secondaryLabel="Cancel"
+      >
+        {formError && <FieldError message={formError} />}
+        <EducationSectionForm
+          items={draft}
+          onChange={handleChange}
+          onRemove={handleRemove}
+          onAdd={handleAdd}
+          errors={errors}
         />
-      }
-    >
-      {isEditing ? (
-        <>
-          {formError && <FieldError message={formError} />}
-          <EducationSectionForm
-            items={activeList}
-            onChange={handleChange}
-            onRemove={handleRemove}
-            onAdd={handleAdd}
-            errors={errors}
-          />
-        </>
-      ) : (
-        <EducationSectionList items={activeList} />
-      )}
-    </SectionWrapper>
+      </FormModal>
+    </>
   );
 }
 

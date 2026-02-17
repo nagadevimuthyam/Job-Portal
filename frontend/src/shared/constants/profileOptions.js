@@ -31,6 +31,21 @@ const PROJECT_STATUS_OPTIONS = [
   { label: "Finished", value: "FINISHED" },
 ];
 
+const EDUCATION_OPTIONS = [
+  { label: "Doctorate/PhD", value: "DOCTORATE_PHD" },
+  { label: "Masters/Post-Graduation", value: "MASTERS_POST_GRADUATION" },
+  { label: "Graduation/Diploma", value: "GRADUATION_DIPLOMA" },
+  { label: "12th", value: "TWELFTH" },
+  { label: "10th", value: "TENTH" },
+  { label: "Below 10th", value: "BELOW_TENTH" },
+];
+
+const COURSE_TYPE_OPTIONS = [
+  { label: "Full time", value: "FULL_TIME" },
+  { label: "Part time", value: "PART_TIME" },
+  { label: "Correspondence/Distance learning", value: "DISTANCE_LEARNING" },
+];
+
 const MONTH_OPTIONS = [
   { label: "Jan", value: "1" },
   { label: "Feb", value: "2" },
@@ -77,6 +92,8 @@ export {
   GENDER_OPTIONS,
   MARITAL_STATUS_OPTIONS,
   PROJECT_STATUS_OPTIONS,
+  EDUCATION_OPTIONS,
+  COURSE_TYPE_OPTIONS,
   MONTH_OPTIONS,
   getYearOptions,
   mapLegacyValue,

@@ -2,10 +2,13 @@ import Input from "../../../../components/ui/Input";
 import Button from "../../../../components/ui/Button";
 import FieldError from "./FieldError";
 import {
-  educationOptions,
-  courseTypeOptions,
-  yearOptions,
-} from "./educationConstants";
+  EDUCATION_OPTIONS,
+  COURSE_TYPE_OPTIONS,
+  getYearOptions,
+  mapLegacyValue,
+} from "../../../../shared/constants/profileOptions";
+
+const yearOptions = getYearOptions(1970).map((option) => option.value);
 
 export default function EducationSectionForm({ items, onChange, onRemove, onAdd, errors }) {
   return (
@@ -25,13 +28,13 @@ export default function EducationSectionForm({ items, onChange, onRemove, onAdd,
                           ? "border-danger focus:border-danger focus:ring-danger/20"
                           : "border-surface-3 focus:border-brand-300 focus:ring-brand-200"
                       }`}
-                      value={edu.degree || ""}
+                      value={mapLegacyValue(edu.degree, EDUCATION_OPTIONS) || ""}
                       onChange={(event) => onChange(index, "degree", event.target.value)}
                     >
                       <option value="">Select education</option>
-                      {educationOptions.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
+                      {EDUCATION_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
                         </option>
                       ))}
                     </select>
@@ -51,16 +54,18 @@ export default function EducationSectionForm({ items, onChange, onRemove, onAdd,
               <div>
                 <p className="text-sm font-semibold text-ink-soft">Course type</p>
                 <div className="mt-2 flex flex-wrap gap-6">
-                  {courseTypeOptions.map((option) => (
-                    <label key={option} className="flex items-center gap-2 text-sm text-ink">
+                  {COURSE_TYPE_OPTIONS.map((option) => (
+                    <label key={option.value} className="flex items-center gap-2 text-sm text-ink">
                       <input
                         type="radio"
                         name={`course_type_${index}`}
-                        value={option}
-                        checked={edu.course_type === option}
-                        onChange={() => onChange(index, "course_type", option)}
+                        value={option.value}
+                        checked={
+                          mapLegacyValue(edu.course_type, COURSE_TYPE_OPTIONS) === option.value
+                        }
+                        onChange={() => onChange(index, "course_type", option.value)}
                       />
-                      {option}
+                      {option.label}
                     </label>
                   ))}
                 </div>

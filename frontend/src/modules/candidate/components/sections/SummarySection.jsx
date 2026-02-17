@@ -1,11 +1,12 @@
 import { memo, useEffect, useState } from "react";
 import { toast } from "sonner";
 import SectionWrapper from "./SectionWrapper";
-import SectionActions from "./SectionActions";
 import SectionState from "./SectionState";
 import FieldError from "./FieldError";
 import parseApiErrors from "./parseApiErrors";
 import { useUpdateProfileMutation } from "../../../../features/candidate/candidateProfileApi";
+import EditButton from "../shared/EditButton";
+import FormModal from "../shared/FormModal";
 
 function SummarySection({ summary, isEditing, isLocked, onEdit, onClose }) {
   const [draft, setDraft] = useState("");
@@ -42,21 +43,22 @@ function SummarySection({ summary, isEditing, isLocked, onEdit, onClose }) {
   };
 
   return (
-    <SectionWrapper
-      title="Summary"
-      description="Give recruiters a strong first impression."
-      actions={
-        <SectionActions
-          isEditing={isEditing}
-          isLocked={isLocked}
-          onEdit={onEdit}
-          onCancel={handleCancel}
-          onSave={handleSave}
-          saveLabel={isLoading ? "Saving..." : "Save Summary"}
-        />
-      }
-    >
-      {isEditing ? (
+    <>
+      <SectionWrapper
+        title="Summary"
+        description="Give recruiters a strong first impression."
+        actions={<EditButton onClick={onEdit} disabled={isLocked} />}
+      >
+        <SectionState message={summary || "Add a short summary highlighting your impact."} />
+      </SectionWrapper>
+      <FormModal
+        open={isEditing}
+        title="Summary"
+        onClose={handleCancel}
+        onSubmit={handleSave}
+        primaryLabel={isLoading ? "Saving..." : "Save Summary"}
+        secondaryLabel="Cancel"
+      >
         <label className="block">
           <span className="text-sm font-semibold text-ink-soft">Summary</span>
           <textarea
@@ -78,10 +80,8 @@ function SummarySection({ summary, isEditing, isLocked, onEdit, onClose }) {
           />
           <FieldError message={errors.summary || errors._error} />
         </label>
-      ) : (
-        <SectionState message={summary || "Add a short summary highlighting your impact."} />
-      )}
-    </SectionWrapper>
+      </FormModal>
+    </>
   );
 }
 

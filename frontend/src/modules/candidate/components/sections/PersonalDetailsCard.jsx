@@ -1,4 +1,5 @@
-﻿import ProfileSectionCard from "../ProfileSectionCard";
+﻿import EditButton from "../shared/EditButton";
+import SectionCard from "../shared/SectionCard";
 
 const formatDate = (value) => {
   if (!value) return "-";
@@ -41,22 +42,10 @@ const formatINR = (value) => {
 export default function PersonalDetailsCard({ data, onEdit, isLocked }) {
   const locationText = formatLocation(data || {});
   return (
-    <ProfileSectionCard
+    <SectionCard
       title="Personal Details"
       description="Basic information recruiters need."
-      actionLabel="Edit"
-      onAction={onEdit}
-      readonly={false}
-      actions={
-        <button
-          type="button"
-          onClick={onEdit}
-          disabled={isLocked}
-          className="rounded-full border border-brand-100 bg-white px-4 py-1.5 text-xs font-semibold text-brand-700 hover:border-brand-200"
-        >
-          Edit
-        </button>
-      }
+      actions={<EditButton onClick={onEdit} disabled={isLocked} />}
     >
       <div className="grid gap-4 text-sm md:grid-cols-2">
         <div>
@@ -126,6 +115,6 @@ export default function PersonalDetailsCard({ data, onEdit, isLocked }) {
           </p>
         </div>
       </div>
-    </ProfileSectionCard>
+    </SectionCard>
   );
 }

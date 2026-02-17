@@ -1,7 +1,6 @@
 import { memo, useEffect, useState } from "react";
 import { toast } from "sonner";
 import SectionWrapper from "./SectionWrapper";
-import SectionActions from "./SectionActions";
 import ProjectsSectionForm from "./ProjectsSectionForm";
 import ProjectsSectionList from "./ProjectsSectionList";
 import FieldError from "./FieldError";
@@ -12,6 +11,8 @@ import {
   useUpdateProjectMutation,
   useDeleteProjectMutation,
 } from "../../../../features/candidate/candidateProfileApi";
+import EditButton from "../shared/EditButton";
+import FormModal from "../shared/FormModal";
 
 const blankProject = {
   title: "",
@@ -207,38 +208,35 @@ function ProjectsSectionContainer({ items, isEditing, isLocked, onEdit, onClose 
     onClose();
   };
 
-  const activeList = isEditing ? draft : items;
+  const viewList = items;
 
   return (
-    <SectionWrapper
-      title="Projects"
-      description="Highlight impactful projects."
-      actions={
-        <SectionActions
-          isEditing={isEditing}
-          isLocked={isLocked}
-          onEdit={onEdit}
-          onCancel={handleCancel}
-          onSave={handleSave}
-          saveLabel="Save Projects"
+    <>
+      <SectionWrapper
+        title="Projects"
+        description="Highlight impactful projects."
+        actions={<EditButton onClick={onEdit} disabled={isLocked} />}
+      >
+        <ProjectsSectionList items={viewList} />
+      </SectionWrapper>
+      <FormModal
+        open={isEditing}
+        title="Projects"
+        onClose={handleCancel}
+        onSubmit={handleSave}
+        primaryLabel="Save Projects"
+        secondaryLabel="Cancel"
+      >
+        {formError && <FieldError message={formError} />}
+        <ProjectsSectionForm
+          items={draft}
+          onChange={handleChange}
+          onRemove={handleRemove}
+          onAdd={handleAdd}
+          errors={errors}
         />
-      }
-    >
-      {isEditing ? (
-        <>
-          {formError && <FieldError message={formError} />}
-          <ProjectsSectionForm
-            items={activeList}
-            onChange={handleChange}
-            onRemove={handleRemove}
-            onAdd={handleAdd}
-            errors={errors}
-          />
-        </>
-      ) : (
-        <ProjectsSectionList items={activeList} />
-      )}
-    </SectionWrapper>
+      </FormModal>
+    </>
   );
 }
 

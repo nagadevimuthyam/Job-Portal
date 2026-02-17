@@ -10,6 +10,10 @@ export default function parseApiErrors(err) {
     return { _error: data.detail };
   }
 
+  if (data.errors && typeof data.errors === "object") {
+    return normalizeErrors(data.errors);
+  }
+
   if (data.detail && typeof data.detail === "object") {
     return normalizeErrors(data.detail);
   }

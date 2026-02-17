@@ -1,7 +1,6 @@
 import { memo, useEffect, useState } from "react";
 import { toast } from "sonner";
 import SectionWrapper from "./SectionWrapper";
-import SectionActions from "./SectionActions";
 import EmploymentSectionForm from "./EmploymentSectionForm";
 import EmploymentSectionList from "./EmploymentSectionList";
 import FieldError from "./FieldError";
@@ -11,6 +10,8 @@ import {
   useUpdateEmploymentMutation,
   useDeleteEmploymentMutation,
 } from "../../../../features/candidate/candidateProfileApi";
+import EditButton from "../shared/EditButton";
+import FormModal from "../shared/FormModal";
 
 const blankEmployment = {
   company: "",
@@ -147,38 +148,35 @@ function EmploymentSectionContainer({ items, isEditing, isLocked, onEdit, onClos
     onClose();
   };
 
-  const activeList = isEditing ? draft : items;
+  const viewList = items;
 
   return (
-    <SectionWrapper
-      title="Employment"
-      description="Showcase your recent roles."
-      actions={
-        <SectionActions
-          isEditing={isEditing}
-          isLocked={isLocked}
-          onEdit={onEdit}
-          onCancel={handleCancel}
-          onSave={handleSave}
-          saveLabel="Save Employment"
+    <>
+      <SectionWrapper
+        title="Employment"
+        description="Showcase your recent roles."
+        actions={<EditButton onClick={onEdit} disabled={isLocked} />}
+      >
+        <EmploymentSectionList items={viewList} />
+      </SectionWrapper>
+      <FormModal
+        open={isEditing}
+        title="Employment"
+        onClose={handleCancel}
+        onSubmit={handleSave}
+        primaryLabel="Save Employment"
+        secondaryLabel="Cancel"
+      >
+        {formError && <FieldError message={formError} />}
+        <EmploymentSectionForm
+          items={draft}
+          onChange={handleChange}
+          onRemove={handleRemove}
+          onAdd={handleAdd}
+          errors={errors}
         />
-      }
-    >
-      {isEditing ? (
-        <>
-          {formError && <FieldError message={formError} />}
-          <EmploymentSectionForm
-            items={activeList}
-            onChange={handleChange}
-            onRemove={handleRemove}
-            onAdd={handleAdd}
-            errors={errors}
-          />
-        </>
-      ) : (
-        <EmploymentSectionList items={activeList} />
-      )}
-    </SectionWrapper>
+      </FormModal>
+    </>
   );
 }
 
