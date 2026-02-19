@@ -5,6 +5,7 @@ import BasicDetailsModal from "./BasicDetailsModal";
 import {
   useGetProfileOverviewQuery,
   useUpdateBasicDetailsMutation,
+  useUpdateProfileMutation,
   useUploadPhotoMutation,
 } from "../../../features/candidate/candidateProfileApi";
 import AvatarBlock from "./banner/AvatarBlock";
@@ -22,11 +23,13 @@ export default function CandidateProfileBanner({ onJumpToSection }) {
   const missingDetails = data?.missing_details ?? [];
   const missingCount = data?.missing_count ?? missingDetails.length;
   const lastUpdated = data?.last_updated;
+  const employments = data?.employments ?? [];
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [photoPreview, setPhotoPreview] = useState("");
   const [uploadPhoto, { isLoading: isUploadingPhoto }] = useUploadPhotoMutation();
   const [updateBasicDetails, { isLoading: isSaving }] = useUpdateBasicDetailsMutation();
+  const [updateProfile, { isLoading: isSavingVisibility }] = useUpdateProfileMutation();
 
   const radius = 68;
   const circumference = 2 * Math.PI * radius;
@@ -35,6 +38,8 @@ export default function CandidateProfileBanner({ onJumpToSection }) {
 
   const displayPhoto = photoPreview || profile.photo_url;
   const topMissing = useMemo(() => missingDetails.slice(0, 3), [missingDetails]);
+  const isSearchable = Boolean(profile.is_searchable);
+  const canEnableVisibility = completionPercent >= 60;
 
   const formattedLocation = useMemo(() => {
     const city = profile.current_city?.trim() || profile.location?.trim();
@@ -60,6 +65,27 @@ export default function CandidateProfileBanner({ onJumpToSection }) {
       .replace(/(\d{2})([A-Za-z]{3}) (\d{4})/, "$1$2, $3")
       .replace(/(\d{2})([A-Za-z]{3})(\d{4})/, "$1$2, $3");
   }, [lastUpdated]);
+
+  const latestEmployment = useMemo(() => {
+    if (!employments.length) return null;
+    const current = employments.find((item) => item.is_current);
+    if (current) return current;
+    const sorted = [...employments].sort((a, b) => {
+      const aDate = new Date(a.start_date || 0).getTime();
+      const bDate = new Date(b.start_date || 0).getTime();
+      return bDate - aDate;
+    });
+    return sorted[0];
+  }, [employments]);
+
+  const employmentTitle = latestEmployment?.title?.trim() || "";
+  const employmentCompany = latestEmployment?.company?.trim() || "";
+  const employmentSummary = useMemo(() => {
+    if (employmentTitle && employmentCompany) {
+      return `${employmentTitle} at ${employmentCompany}`;
+    }
+    return employmentTitle || employmentCompany || "";
+  }, [employmentTitle, employmentCompany]);
 
   const leftRows = useMemo(
     () => [
@@ -133,6 +159,21 @@ export default function CandidateProfileBanner({ onJumpToSection }) {
     }
   };
 
+  const handleToggleVisibility = async () => {
+    if (!canEnableVisibility && !isSearchable) {
+      toast.error("Complete at least 60% of your profile to enable visibility.");
+      return;
+    }
+    try {
+      await updateProfile({ is_searchable: !isSearchable }).unwrap();
+      toast.success(
+        !isSearchable ? "Profile is now visible to employers." : "Profile visibility turned off."
+      );
+    } catch (err) {
+      toast.error(err?.data?.error?.message || "Unable to update visibility.");
+    }
+  };
+
   const handleJump = (key) => {
     if (!onJumpToSection) return;
     onJumpToSection(sectionMap[key] || "personal");
@@ -163,6 +204,8 @@ export default function CandidateProfileBanner({ onJumpToSection }) {
           <div className="space-y-2 border-b border-surface-3/70 pb-3">
             <ProfileBannerHeader
               name={profile.full_name || "Candidate"}
+              role={employmentTitle}
+              company={employmentCompany}
               onEdit={() => setIsModalOpen(true)}
             />
             <BannerMeta updated={formattedUpdated} />
@@ -170,15 +213,46 @@ export default function CandidateProfileBanner({ onJumpToSection }) {
           <BasicInfoBlock leftRows={leftRows} rightRows={rightRows} />
         </div>
 
-        <MissingDetailsPanel
-          missingCount={missingCount}
-          topMissing={topMissing}
-          onJump={handleJump}
-          ctaLabel={{
-            text: `Add ${missingCount || missingDetails.length} missing details`,
-            onClick: () => handleJump(missingDetails[0]?.key || "personal"),
-          }}
-        />
+        <div className="space-y-3">
+          <MissingDetailsPanel
+            missingCount={missingCount}
+            topMissing={topMissing}
+            onJump={handleJump}
+            ctaLabel={{
+              text: `Add ${missingCount || missingDetails.length} missing details`,
+              onClick: () => handleJump(missingDetails[0]?.key || "personal"),
+            }}
+          />
+          <div className="rounded-2xl border border-surface-3 bg-white/70 p-4 shadow-soft">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-ink">Profile visibility</p>
+                <p className="text-xs text-ink-faint">Make my profile visible to employers</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={isSearchable}
+                disabled={isSavingVisibility || (!canEnableVisibility && !isSearchable)}
+                onClick={handleToggleVisibility}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                  isSearchable ? "bg-brand-600" : "bg-slate-300"
+                } ${isSavingVisibility || (!canEnableVisibility && !isSearchable) ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
+                    isSearchable ? "translate-x-5" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+            {!canEnableVisibility && !isSearchable && (
+              <p className="mt-2 text-xs text-ink-faint">
+                Complete at least 60% of your profile to enable visibility.
+              </p>
+            )}
+          </div>
+        </div>
       </div>
 
       {isModalOpen && (
@@ -200,6 +274,7 @@ export default function CandidateProfileBanner({ onJumpToSection }) {
             availability_to_join: profile.availability_to_join || "",
             notice_period_days: profile.notice_period_days ?? "",
           }}
+          employmentSummary={employmentSummary}
         />
       )}
     </Card>

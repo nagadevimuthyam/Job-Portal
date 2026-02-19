@@ -1,12 +1,18 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { skipToken } from "@reduxjs/toolkit/query";
 import Button from "../../../components/ui/Button";
 import Card from "../../../components/ui/Card";
 import Input from "../../../components/ui/Input";
 import Skeleton from "../../../components/ui/Skeleton";
 import Badge from "../../../components/ui/Badge";
 import { useSearchCandidatesQuery } from "../../../features/employer/employerApi";
+import {
+  WORK_STATUS_OPTIONS,
+  AVAILABILITY_OPTIONS,
+  EDUCATION_OPTIONS,
+} from "../../../shared/constants/profileOptions";
 
 const formatDate = (value) =>
   new Date(value).toLocaleDateString("en-US", {
@@ -23,42 +29,97 @@ export default function CandidateSearch() {
     exp_min: "",
     exp_max: "",
     skills: "",
-    updated_within: "30",
+    updated_within: "",
     salary_min: "",
     salary_max: "",
     notice_period: "",
+    work_status: "",
+    availability_to_join: "",
+    education: "",
   });
   const [savedSearches, setSavedSearches] = useState([]);
   const [recentSearches, setRecentSearches] = useState([]);
   const [saveName, setSaveName] = useState("");
+  const [shouldFetch, setShouldFetch] = useState(false);
+  const [searchParams, setSearchParams] = useState(null);
 
-  const params = useMemo(() => ({
-    keywords: filters.keywords,
-    location: filters.location,
-    exp_min: filters.exp_min,
-    exp_max: filters.exp_max,
-    skills: filters.skills,
-    updated_within: filters.updated_within,
-    salary_min: filters.salary_min,
-    salary_max: filters.salary_max,
-    notice_period: filters.notice_period,
-  }), [filters]);
+  const isSearchEmpty = (values) => {
+    const rawValues = [
+      values.keywords,
+      values.location,
+      values.exp_min,
+      values.exp_max,
+      values.skills,
+      values.updated_within,
+      values.salary_min,
+      values.salary_max,
+      values.notice_period,
+      values.work_status,
+      values.availability_to_join,
+      values.education,
+    ];
+    return rawValues.every((value) => {
+      if (value === null || value === undefined) return true;
+      return String(value).trim() === "";
+    });
+  };
 
-  const { data, isLoading } = useSearchCandidatesQuery(params);
-  const results = data?.results || [];
+  const params = useMemo(
+    () => ({
+      keywords: filters.keywords,
+      location: filters.location,
+      exp_min: filters.exp_min,
+      exp_max: filters.exp_max,
+      skills: filters.skills,
+      updated_within: filters.updated_within,
+      salary_min: filters.salary_min,
+      salary_max: filters.salary_max,
+      notice_period: filters.notice_period,
+      work_status: filters.work_status,
+      availability_to_join: filters.availability_to_join,
+      education: filters.education,
+    }),
+    [filters]
+  );
+
+  const queryArg = shouldFetch && searchParams ? searchParams : skipToken;
+  const { data, isLoading } = useSearchCandidatesQuery(queryArg);
+  const results = shouldFetch ? data?.results || [] : [];
+  const resultCount = shouldFetch ? data?.count ?? 0 : 0;
+
+  useEffect(() => {
+    if (isSearchEmpty(filters)) {
+      setShouldFetch(false);
+      setSearchParams(null);
+    }
+  }, [filters]);
 
   const handleSaveSearch = () => {
     if (!saveName.trim()) {
       toast.error("Enter a name to save this search.");
       return;
     }
-    setSavedSearches((prev) => [...prev, { name: saveName.trim(), params }]);
+    setSavedSearches((prev) => [...prev, { name: saveName.trim(), params: { ...filters } }]);
     setSaveName("");
     toast.success("Search saved.");
   };
 
+  const handleSaveRecent = () => {
+    setRecentSearches((prev) => [
+      { name: filters.keywords || "Quick search", params: { ...filters } },
+      ...prev,
+    ].slice(0, 5));
+  };
+
   const handleRunSearch = () => {
-    setRecentSearches((prev) => [{ name: filters.keywords || "Quick search", params }, ...prev].slice(0, 5));
+    if (isSearchEmpty(filters)) {
+      setShouldFetch(false);
+      setSearchParams(null);
+      return;
+    }
+    setSearchParams({ ...params });
+    setShouldFetch(true);
+    handleSaveRecent();
   };
 
   return (
@@ -73,6 +134,12 @@ export default function CandidateSearch() {
           placeholder="React, Python, UX"
           value={filters.keywords}
           onChange={(event) => setFilters({ ...filters, keywords: event.target.value })}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              handleRunSearch();
+            }
+          }}
         />
         <Input
           label="Location"
@@ -119,6 +186,53 @@ export default function CandidateSearch() {
           value={filters.skills}
           onChange={(event) => setFilters({ ...filters, skills: event.target.value })}
         />
+        <label className="block">
+          <span className="text-sm font-semibold text-ink-soft">Work Status</span>
+          <select
+            className="mt-1 w-full rounded-xl border border-surface-3 bg-surface-inverse px-3 py-2.5 text-sm text-ink shadow-sm focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-200"
+            value={filters.work_status}
+            onChange={(event) => setFilters({ ...filters, work_status: event.target.value })}
+          >
+            <option value="">Any</option>
+            {WORK_STATUS_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block">
+          <span className="text-sm font-semibold text-ink-soft">Availability to Join</span>
+          <select
+            className="mt-1 w-full rounded-xl border border-surface-3 bg-surface-inverse px-3 py-2.5 text-sm text-ink shadow-sm focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-200"
+            value={filters.availability_to_join}
+            onChange={(event) =>
+              setFilters({ ...filters, availability_to_join: event.target.value })
+            }
+          >
+            <option value="">Any</option>
+            {AVAILABILITY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block">
+          <span className="text-sm font-semibold text-ink-soft">Education Level</span>
+          <select
+            className="mt-1 w-full rounded-xl border border-surface-3 bg-surface-inverse px-3 py-2.5 text-sm text-ink shadow-sm focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-200"
+            value={filters.education}
+            onChange={(event) => setFilters({ ...filters, education: event.target.value })}
+          >
+            <option value="">Any</option>
+            {EDUCATION_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <Input
           label="Notice Period (days)"
           type="number"
@@ -141,7 +255,10 @@ export default function CandidateSearch() {
         />
         <div className="flex gap-3">
           <Button type="button" onClick={handleRunSearch}>
-            Apply
+            Search
+          </Button>
+          <Button type="button" variant="outline" onClick={handleSaveRecent}>
+            Save to Recent
           </Button>
           <Button type="button" variant="outline" onClick={handleSaveSearch}>
             Save Search
@@ -155,10 +272,16 @@ export default function CandidateSearch() {
             <h1 className="text-2xl font-bold text-ink">Candidate Search</h1>
             <p className="text-sm text-ink-faint">Search across the candidate database.</p>
           </div>
-          <p className="text-sm text-ink-faint">Results: {data?.count ?? 0}</p>
+          <p className="text-sm text-ink-faint">Results: {resultCount}</p>
         </div>
         {isLoading ? (
           <Skeleton className="h-64 w-full" />
+        ) : !shouldFetch ? (
+          <Card>
+            <p className="text-sm text-ink-faint">
+              Start typing or apply filters to search candidates.
+            </p>
+          </Card>
         ) : (
           <div className="space-y-4">
             {results.map((candidate) => (

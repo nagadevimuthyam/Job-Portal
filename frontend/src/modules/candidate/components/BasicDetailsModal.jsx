@@ -14,6 +14,7 @@ export default function BasicDetailsModal({
   onSave,
   isSaving,
   initialValues,
+  employmentSummary,
 }) {
   const [form, setForm] = useState({
     location_country: "India",
@@ -145,7 +146,15 @@ export default function BasicDetailsModal({
             </button>
           </div>
 
-        <div className="space-y-6 px-6 py-6">
+          <div className="space-y-6 px-6 py-6">
+          {employmentSummary && (
+            <div className="space-y-1 rounded-xl border border-surface-2 bg-surface-1 p-4">
+              <p className="text-sm font-semibold text-ink">{employmentSummary}</p>
+              <p className="text-xs text-ink-faint">
+                To edit, go to the Employment section.
+              </p>
+            </div>
+          )}
           <div>
             <p className="text-sm font-semibold text-ink-soft">Work status *</p>
             <p className="text-xs text-ink-faint">
