@@ -80,6 +80,7 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
             "resume_filename",
             "photo_file",
             "photo_url",
+            "is_searchable",
             "last_updated",
         )
 
@@ -130,6 +131,7 @@ class CandidateProfileUpdateSerializer(serializers.ModelSerializer):
             "notice_period_days",
             "expected_salary",
             "salary_currency",
+            "is_searchable",
         )
 
     def validate(self, attrs):

@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from apps.masteradmin.permissions import IsCandidate
 from .models import CandidateProfile
 from .serializers import CandidateProfileUpdateSerializer
-from .views_common import build_profile_response, error_response
+from .views_common import build_profile_response, calculate_profile_completion, error_response
 
 logger = logging.getLogger(__name__)
 
@@ -53,8 +53,19 @@ class CandidateProfileView(APIView):
             )
         serializer = CandidateProfileUpdateSerializer(profile, data=request.data, partial=True)
         if serializer.is_valid():
+            requested_visibility = serializer.validated_data.get("is_searchable", None)
             serializer.save()
             profile.refresh_from_db()
+            completion_percent, _ = calculate_profile_completion(profile)
+            if completion_percent < 60 and profile.is_searchable:
+                profile.is_searchable = False
+                profile.save(update_fields=["is_searchable"])
+                if requested_visibility is True:
+                    return error_response(
+                        "Complete at least 60% of your profile to enable visibility.",
+                        "PROFILE_VISIBILITY_MIN_COMPLETION",
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                    )
             try:
                 return Response(build_profile_response(profile, request))
             except Exception:

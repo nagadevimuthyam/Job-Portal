@@ -37,6 +37,7 @@ class CandidateProfile(models.Model):
     salary_currency = models.CharField(max_length=8, blank=True, default="INR")
     resume_file = models.FileField(upload_to="resumes/", null=True, blank=True)
     photo_file = models.FileField(upload_to="profile-photos/", null=True, blank=True)
+    is_searchable = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
