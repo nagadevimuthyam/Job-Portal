@@ -1,3 +1,5 @@
+import noticePeriodOptions from "../../../../shared/constants/noticePeriodOptions";
+
 export default function PersonalDetailsList({
   fullName,
   email,
@@ -5,9 +7,11 @@ export default function PersonalDetailsList({
   location,
   totalExperienceYears,
   totalExperienceMonths,
-  noticePeriodDays,
+  noticePeriodCode,
   expectedSalary,
 }) {
+  const noticeLabel =
+    noticePeriodOptions.find((option) => option.value === noticePeriodCode)?.label || "-";
   return (
     <div className="grid gap-3 text-sm md:grid-cols-2">
       <div>
@@ -34,9 +38,7 @@ export default function PersonalDetailsList({
       </div>
       <div>
         <p className="text-xs text-ink-faint">Notice Period</p>
-        <p className="font-semibold text-ink">
-          {noticePeriodDays ? `${noticePeriodDays} days` : "-"}
-        </p>
+        <p className="font-semibold text-ink">{noticeLabel || "-"}</p>
       </div>
       <div>
         <p className="text-xs text-ink-faint">Expected Salary</p>

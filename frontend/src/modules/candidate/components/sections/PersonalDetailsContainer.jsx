@@ -17,7 +17,7 @@ function PersonalDetailsContainer({
   location,
   totalExperienceYears,
   totalExperienceMonths,
-  noticePeriodDays,
+  noticePeriodCode,
   expectedSalary,
   isEditing,
   isLocked,
@@ -31,7 +31,7 @@ function PersonalDetailsContainer({
     location: "",
     total_experience_years: 0,
     total_experience_months: 0,
-    notice_period_days: "",
+    notice_period_code: null,
     expected_salary: "",
   });
   const [errors, setErrors] = useState({});
@@ -47,7 +47,7 @@ function PersonalDetailsContainer({
         location: location || "",
         total_experience_years: totalExperienceYears ?? 0,
         total_experience_months: totalExperienceMonths ?? 0,
-        notice_period_days: noticePeriodDays ?? "",
+        notice_period_code: noticePeriodCode ?? null,
         expected_salary: expectedSalary ?? "",
       });
       setErrors({});
@@ -61,7 +61,7 @@ function PersonalDetailsContainer({
     location,
     totalExperienceYears,
     totalExperienceMonths,
-    noticePeriodDays,
+    noticePeriodCode,
     expectedSalary,
   ]);
 
@@ -74,7 +74,7 @@ function PersonalDetailsContainer({
         location: draft.location,
         total_experience_years: Number(draft.total_experience_years || 0),
         total_experience_months: Number(draft.total_experience_months || 0),
-        notice_period_days: parseOptionalInt(draft.notice_period_days),
+        notice_period_code: draft.notice_period_code || null,
         expected_salary: parseOptionalInt(draft.expected_salary),
       }).unwrap();
       toast.success("Personal details updated.");
@@ -88,16 +88,16 @@ function PersonalDetailsContainer({
   };
 
   const handleCancel = () => {
-    setDraft({
-      full_name: fullName || "",
-      email: email || "",
-      phone: phone || "",
-      location: location || "",
-      total_experience_years: totalExperienceYears ?? 0,
-      total_experience_months: totalExperienceMonths ?? 0,
-      notice_period_days: noticePeriodDays ?? "",
-      expected_salary: expectedSalary ?? "",
-    });
+      setDraft({
+        full_name: fullName || "",
+        email: email || "",
+        phone: phone || "",
+        location: location || "",
+        total_experience_years: totalExperienceYears ?? 0,
+        total_experience_months: totalExperienceMonths ?? 0,
+        notice_period_code: noticePeriodCode ?? null,
+        expected_salary: expectedSalary ?? "",
+      });
     setErrors({});
     setFormError("");
     onClose();
@@ -138,7 +138,7 @@ function PersonalDetailsContainer({
           location={location}
           totalExperienceYears={totalExperienceYears}
           totalExperienceMonths={totalExperienceMonths}
-          noticePeriodDays={noticePeriodDays}
+          noticePeriodCode={noticePeriodCode}
           expectedSalary={expectedSalary}
         />
       )}

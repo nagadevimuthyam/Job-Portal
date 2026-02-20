@@ -7,6 +7,7 @@ import {
   AVAILABILITY_OPTIONS,
   mapLegacyValue,
 } from "../../../shared/constants/profileOptions";
+import noticePeriodOptions from "../../../shared/constants/noticePeriodOptions";
 
 export default function BasicDetailsModal({
   isOpen,
@@ -26,20 +27,9 @@ export default function BasicDetailsModal({
     work_status: "",
     total_experience_years: "",
     availability_to_join: "",
-    notice_period_days: "",
+    notice_period_code: null,
   });
   const [errors, setErrors] = useState({});
-
-  const noticePeriodOptions = useMemo(
-    () => [
-      { label: "15 Days or less", days: 15, code: "15_DAYS_OR_LESS" },
-      { label: "1 Month", days: 30, code: "1_MONTH" },
-      { label: "2 Months", days: 60, code: "2_MONTHS" },
-      { label: "3 Months", days: 90, code: "3_MONTHS" },
-      { label: "More than 3 Months", days: 120, code: "MORE_THAN_3_MONTHS" },
-    ],
-    []
-  );
 
   const experienceOptions = useMemo(() => {
     const options = [];
@@ -67,25 +57,11 @@ export default function BasicDetailsModal({
           initialValues?.availability_to_join,
           AVAILABILITY_OPTIONS
         ),
-        notice_period_days: initialValues?.notice_period_days ?? "",
+        notice_period_code: initialValues?.notice_period_code ?? null,
       });
-      if (
-        !initialValues?.availability_to_join &&
-        (initialValues?.notice_period_days || initialValues?.notice_period_days === 0)
-      ) {
-        const match = noticePeriodOptions.find(
-          (option) => option.days === Number(initialValues.notice_period_days)
-        );
-        if (match) {
-          setForm((prev) => ({
-            ...prev,
-            availability_to_join: match.code,
-          }));
-        }
-      }
       setErrors({});
     }
-  }, [isOpen, initialValues, noticePeriodOptions]);
+  }, [isOpen, initialValues]);
 
   if (!isOpen) return null;
 
@@ -101,8 +77,13 @@ export default function BasicDetailsModal({
         nextErrors.total_experience_years = "Select your total experience";
       }
     }
-    if (form.notice_period_days === "" || form.notice_period_days === null || form.notice_period_days === undefined) {
-      nextErrors.notice_period_days = "Notice period is required";
+    if (
+      form.notice_period_code !== "" &&
+      form.notice_period_code !== null &&
+      form.notice_period_code !== undefined &&
+      !noticePeriodOptions.some((option) => option.value === form.notice_period_code)
+    ) {
+      nextErrors.notice_period_code = "Invalid notice period.";
     }
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -125,7 +106,7 @@ export default function BasicDetailsModal({
           : Number(form.total_experience_years || 0),
       total_experience_months: 0,
       availability_to_join: form.availability_to_join,
-      notice_period_days: form.notice_period_days === "" ? null : Number(form.notice_period_days),
+      notice_period_code: form.notice_period_code || null,
     });
   };
 
@@ -291,24 +272,26 @@ export default function BasicDetailsModal({
           </div>
 
           <div>
-            <p className="text-sm font-semibold text-ink-soft">Notice period *</p>
+            <p className="text-sm font-semibold text-ink-soft">Notice period</p>
             <p className="text-xs text-ink-faint">
               Let recruiters know your availability
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               {noticePeriodOptions.map((option) => (
                 <button
-                  key={option.days}
+                  key={option.value}
                   type="button"
                   onClick={() =>
-                    setForm({
-                      ...form,
-                      notice_period_days: option.days,
-                      availability_to_join: option.code,
-                    })
+                    setForm((prev) => ({
+                      ...prev,
+                      notice_period_code:
+                        String(prev.notice_period_code || "") === option.value
+                          ? null
+                          : option.value || null,
+                    }))
                   }
                   className={`rounded-full border px-4 py-1.5 text-xs font-semibold transition ${
-                    Number(form.notice_period_days) === option.days
+                    String(form.notice_period_code || "") === option.value
                       ? "border-brand-300 bg-brand-50 text-brand-700"
                     : "border-surface-3 bg-white text-ink-faint hover:border-brand-200 hover:text-ink"
                   }`}
@@ -317,8 +300,8 @@ export default function BasicDetailsModal({
                 </button>
               ))}
             </div>
-            {errors.notice_period_days && (
-              <p className="mt-1 text-xs text-danger">{errors.notice_period_days}</p>
+            {errors.notice_period_code && (
+              <p className="mt-1 text-xs text-danger">{errors.notice_period_code}</p>
             )}
           </div>
         </div>

@@ -7,6 +7,7 @@ import ProfileSectionCard from "../../candidate/components/ProfileSectionCard";
 import ResumeCard from "../../candidate/components/ResumeCard";
 import Button from "../../../components/ui/Button";
 import { useGetCandidateProfileQuery } from "../../../features/employer/employerCandidateApi";
+import noticePeriodOptions from "../../../shared/constants/noticePeriodOptions";
 
 const formatDateRange = (start, end, isCurrent) => {
   if (!start) return "Dates not set";
@@ -32,6 +33,9 @@ export default function CandidateProfile() {
   const educationRef = useRef(null);
   const projectsRef = useRef(null);
   const personalRef = useRef(null);
+  const noticePeriodLabel =
+    noticePeriodOptions.find((option) => option.value === profile?.notice_period_code)
+      ?.label || "-";
 
   const quickLinks = [
     { id: "resume", label: "Resume" },
@@ -296,9 +300,7 @@ export default function CandidateProfile() {
               </div>
               <div>
                 <p className="text-xs text-ink-faint">Notice Period</p>
-                <p className="font-semibold text-ink">
-                  {profile?.notice_period_days ? `${profile.notice_period_days} days` : "-"}
-                </p>
+                <p className="font-semibold text-ink">{noticePeriodLabel}</p>
               </div>
               <div>
                 <p className="text-xs text-ink-faint">Expected Salary</p>

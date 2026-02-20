@@ -272,7 +272,7 @@ export default function CandidateProfileBanner({ onJumpToSection }) {
             total_experience_years: profile.total_experience_years ?? "",
             total_experience_months: profile.total_experience_months ?? "",
             availability_to_join: profile.availability_to_join || "",
-            notice_period_days: profile.notice_period_days ?? "",
+            notice_period_code: profile.notice_period_code ?? null,
           }}
           employmentSummary={employmentSummary}
         />

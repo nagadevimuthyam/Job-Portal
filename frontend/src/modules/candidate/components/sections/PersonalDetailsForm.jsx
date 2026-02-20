@@ -1,5 +1,6 @@
 import Input from "../../../../components/ui/Input";
 import FieldError from "./FieldError";
+import noticePeriodOptions from "../../../../shared/constants/noticePeriodOptions";
 
 export default function PersonalDetailsForm({ draft, onChange, errors }) {
   return (
@@ -59,14 +60,35 @@ export default function PersonalDetailsForm({ draft, onChange, errors }) {
         />
         <FieldError message={errors.total_experience_months} />
       </div>
-      <div>
-        <Input
-          label="Notice Period (days)"
-          type="number"
-          value={draft.notice_period_days}
-          onChange={(event) => onChange({ ...draft, notice_period_days: event.target.value })}
-        />
-        <FieldError message={errors.notice_period_days} />
+      <div className="md:col-span-2">
+        <p className="text-sm font-semibold text-ink-soft">Notice period</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {noticePeriodOptions.map((option) => (
+            <button
+              key={option.value || "any"}
+              type="button"
+              onClick={() =>
+                onChange({
+                  ...draft,
+                  notice_period_code:
+                    String(draft.notice_period_code || "") === option.value
+                      ? null
+                      : option.value === ""
+                        ? null
+                        : option.value,
+                })
+              }
+              className={`rounded-full border px-4 py-1.5 text-xs font-semibold transition ${
+                String(draft.notice_period_code || "") === option.value
+                  ? "border-brand-300 bg-brand-50 text-brand-700"
+                  : "border-surface-3 bg-white text-ink-faint hover:border-brand-200 hover:text-ink"
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+        <FieldError message={errors.notice_period_code} />
       </div>
       <div>
         <Input

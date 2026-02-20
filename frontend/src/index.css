@@ -20,6 +20,33 @@
   scrollbar-color: rgba(148, 163, 184, 0.6) transparent;
 }
 
+.soft-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.soft-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.soft-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.3);
+  border-radius: 999px;
+}
+
+.soft-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
 :root {
   --brand-50: 240 249 255;
   --brand-100: 224 242 254;
