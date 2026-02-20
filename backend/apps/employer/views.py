@@ -47,7 +47,7 @@ class CandidateSearchView(ListAPIView):
             params.get("updated_within"),
             params.get("salary_min"),
             params.get("salary_max"),
-            params.get("notice_period"),
+            params.get("notice_period_code"),
             params.get("work_status"),
             params.get("availability_to_join"),
             params.get("education"),
@@ -96,7 +96,7 @@ class CandidateSearchView(ListAPIView):
         updated_within = self.request.query_params.get("updated_within")
         salary_min = self.request.query_params.get("salary_min")
         salary_max = self.request.query_params.get("salary_max")
-        notice_period = self.request.query_params.get("notice_period")
+        notice_period_code = self.request.query_params.get("notice_period_code")
         work_status = self.request.query_params.get("work_status", "").strip()
         availability = self.request.query_params.get("availability_to_join", "").strip()
         education_level = self.request.query_params.get("education", "").strip()
@@ -130,15 +130,15 @@ class CandidateSearchView(ListAPIView):
             or_filters.append(Q(country__icontains=country))
         if exp_min:
             try:
-                or_filters.append(
-                    Q(total_experience_months_calc__gte=int(float(exp_min) * 12))
+                qs = qs.filter(
+                    total_experience_months_calc__gte=int(float(exp_min) * 12)
                 )
             except ValueError:
                 pass
         if exp_max:
             try:
-                or_filters.append(
-                    Q(total_experience_months_calc__lte=int(float(exp_max) * 12))
+                qs = qs.filter(
+                    total_experience_months_calc__lte=int(float(exp_max) * 12)
                 )
             except ValueError:
                 pass
@@ -163,8 +163,8 @@ class CandidateSearchView(ListAPIView):
             or_filters.append(Q(expected_salary__gte=salary_min))
         if salary_max:
             or_filters.append(Q(expected_salary__lte=salary_max))
-        if notice_period:
-            or_filters.append(Q(notice_period_days__lte=notice_period))
+        if notice_period_code:
+            or_filters.append(Q(notice_period_code=notice_period_code))
         if work_status:
             or_filters.append(Q(work_status=work_status))
         if availability:

@@ -33,6 +33,7 @@ class CandidateProfile(models.Model):
         validators=[MinValueValidator(0), MaxValueValidator(11)],
     )
     notice_period_days = models.PositiveIntegerField(null=True, blank=True)
+    notice_period_code = models.CharField(max_length=30, null=True, blank=True)
     expected_salary = models.PositiveIntegerField(null=True, blank=True)
     salary_currency = models.CharField(max_length=8, blank=True, default="INR")
     resume_file = models.FileField(upload_to="resumes/", null=True, blank=True)
@@ -47,6 +48,7 @@ class CandidateProfile(models.Model):
             models.Index(fields=["updated_at"]),
             models.Index(fields=["location"]),
             models.Index(fields=["notice_period_days"]),
+            models.Index(fields=["notice_period_code"]),
             models.Index(fields=["expected_salary"]),
         ]
 

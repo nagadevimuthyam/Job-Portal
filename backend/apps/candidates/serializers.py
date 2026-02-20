@@ -72,7 +72,7 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
             "availability_to_join",
             "total_experience_years",
             "total_experience_months",
-            "notice_period_days",
+            "notice_period_code",
             "expected_salary",
             "salary_currency",
             "resume_file",
@@ -128,7 +128,7 @@ class CandidateProfileUpdateSerializer(serializers.ModelSerializer):
             "availability_to_join",
             "total_experience_years",
             "total_experience_months",
-            "notice_period_days",
+            "notice_period_code",
             "expected_salary",
             "salary_currency",
             "is_searchable",
@@ -150,11 +150,22 @@ class CandidateProfileUpdateSerializer(serializers.ModelSerializer):
             "MORE_THAN_3_MONTHS",
             "",
         }
+        notice_period_allowed = {
+            "15_DAYS_OR_LESS",
+            "1_MONTH",
+            "2_MONTHS",
+            "3_MONTHS",
+            "MORE_THAN_3_MONTHS",
+            "",
+            None,
+        }
         errors = {}
         if data.get("work_status") not in work_status_allowed:
             errors["work_status"] = "Invalid work status."
         if data.get("availability_to_join") not in availability_allowed:
             errors["availability_to_join"] = "Invalid availability option."
+        if data.get("notice_period_code") not in notice_period_allowed:
+            errors["notice_period_code"] = "Invalid notice period."
         if errors:
             raise serializers.ValidationError(errors)
         return attrs
@@ -179,7 +190,7 @@ class CandidatePersonalDetailsSerializer(serializers.ModelSerializer):
             "location",
             "total_experience_years",
             "total_experience_months",
-            "notice_period_days",
+            "notice_period_code",
             "expected_salary",
             "salary_currency",
         )
@@ -238,7 +249,7 @@ class CandidateBasicDetailsSerializer(serializers.ModelSerializer):
             "email",
             "total_experience_years",
             "total_experience_months",
-            "notice_period_days",
+            "notice_period_code",
         )
 
     def validate(self, attrs):
@@ -265,8 +276,19 @@ class CandidateBasicDetailsSerializer(serializers.ModelSerializer):
             "",
             None,
         }
+        notice_period_allowed = {
+            "15_DAYS_OR_LESS",
+            "1_MONTH",
+            "2_MONTHS",
+            "3_MONTHS",
+            "MORE_THAN_3_MONTHS",
+            "",
+            None,
+        }
         if data.get("availability_to_join") not in availability_allowed:
             errors["availability_to_join"] = "Invalid availability option."
+        if data.get("notice_period_code") not in notice_period_allowed:
+            errors["notice_period_code"] = "Invalid notice period."
 
         if data.get("work_status") == "EXPERIENCED":
             years = data.get("total_experience_years")
