@@ -8,6 +8,11 @@ export default function SkillDropdown({
   isOpen,
   anchorRect,
 }) {
+  const formatLabel = (label) => {
+    if (!label || label !== label.toLowerCase()) return label;
+    return label.replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
   if (!isOpen || items.length === 0 || !anchorRect) return null;
 
   return createPortal(
@@ -33,7 +38,7 @@ export default function SkillDropdown({
                 onSelect(item);
               }}
             >
-              <span>{item.label}</span>
+              <span>{formatLabel(item.label)}</span>
               {item.badge && (
                 <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700">
                   {item.badge}

@@ -10,6 +10,7 @@ export const emptyFilters = {
   work_status: "",
   availability_to_join: "",
   education: "",
+  gender: [],
 };
 
 export const cleanParams = (params) => {
@@ -23,18 +24,30 @@ export const cleanParams = (params) => {
 };
 
 export const buildSearchPayload = (filters, selectedSkills) => {
+  const salaryMin = filters.salary_min
+    ? String(filters.salary_min).replace(/[^\d]/g, "")
+    : "";
+  const salaryMax = filters.salary_max
+    ? String(filters.salary_max).replace(/[^\d]/g, "")
+    : "";
+  const genderValue = Array.isArray(filters.gender)
+    ? filters.gender.join(",")
+    : filters.gender;
   const skillIds = selectedSkills
     .filter((skill) => skill.id)
     .map((skill) => skill.id)
     .join(",");
-  const customSkills = selectedSkills
-    .filter((skill) => !skill.id)
+  const skillNames = selectedSkills
     .map((skill) => skill.name)
+    .filter(Boolean)
     .join(", ");
 
   return cleanParams({
     ...filters,
-    skills: customSkills,
+    salary_min: salaryMin,
+    salary_max: salaryMax,
+    gender: genderValue,
+    skills: skillNames,
     skill_ids: skillIds,
   });
 };

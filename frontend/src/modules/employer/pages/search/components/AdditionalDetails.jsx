@@ -4,6 +4,7 @@ const genderOptions = [
 ];
 
 export default function AdditionalDetails({ value, onChange }) {
+  const safeValue = Array.isArray(value) ? value : [];
   return (
     <details className="rounded-xl border border-surface-3/60 bg-surface-inverse p-4">
       <summary className="cursor-pointer text-sm font-semibold text-ink">
@@ -13,7 +14,7 @@ export default function AdditionalDetails({ value, onChange }) {
         <p className="text-sm font-semibold text-ink-soft">Gender</p>
         <div className="flex flex-wrap gap-2">
           {genderOptions.map((option) => {
-            const isActive = value.includes(option.value);
+            const isActive = safeValue.includes(option.value);
             return (
               <button
                 key={option.value}
@@ -24,11 +25,10 @@ export default function AdditionalDetails({ value, onChange }) {
                     : "border-surface-3 bg-surface-inverse text-ink"
                 }`}
                 onClick={() => {
-                  onChange((prev) =>
-                    prev.includes(option.value)
-                      ? prev.filter((item) => item !== option.value)
-                      : [...prev, option.value]
-                  );
+                  const next = isActive
+                    ? safeValue.filter((item) => item !== option.value)
+                    : [...safeValue, option.value];
+                  onChange(next);
                 }}
               >
                 <span>{option.label}</span>

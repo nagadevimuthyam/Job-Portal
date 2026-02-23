@@ -47,7 +47,7 @@ function SkillsSectionContainer({ skills, isEditing, isLocked, onEdit, onClose }
 
     try {
       for (const skill of toCreate) {
-        await createSkill({ name: skill.name }).unwrap();
+        await createSkill({ name: skill.name, skill_id: skill.id || null }).unwrap();
       }
       for (const skill of toDelete) {
         await deleteSkill(skill.id).unwrap();

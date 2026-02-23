@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import Button from "../../../../components/ui/Button";
 import Input from "../../../../components/ui/Input";
 import FieldError from "./FieldError";
+import { formatINR } from "../../../../shared/utils/formatINR";
 import {
   GENDER_OPTIONS,
   MARITAL_STATUS_OPTIONS,
@@ -25,18 +26,7 @@ export default function PersonalDetailsModal({
     work_authorization_country: "",
     expected_salary: "",
   });
-  const [salaryCurrency, setSalaryCurrency] = useState("INR");
   const salaryInputRef = useRef(null);
-
-  const formatINR = (value) => {
-    if (!value) return "";
-    const digits = String(value).replace(/[^\d]/g, "");
-    if (digits.length <= 3) return digits;
-    const last3 = digits.slice(-3);
-    const rest = digits.slice(0, -3);
-    const restGrouped = rest.replace(/\B(?=(\d{2})+(?!\d))/g, ",");
-    return `${restGrouped},${last3}`;
-  };
 
   useEffect(() => {
     if (isOpen) {
@@ -54,7 +44,6 @@ export default function PersonalDetailsModal({
             ? ""
             : String(initialValues.expected_salary),
       });
-      setSalaryCurrency(initialValues?.salary_currency || "INR");
     }
   }, [isOpen, initialValues]);
 
@@ -68,7 +57,7 @@ export default function PersonalDetailsModal({
       marital_status: form.marital_status,
       work_authorization_country: form.work_authorization_country,
       expected_salary: form.expected_salary === "" ? null : Number(form.expected_salary),
-      salary_currency: salaryCurrency,
+      salary_currency: "INR",
     });
   };
 
@@ -173,14 +162,9 @@ export default function PersonalDetailsModal({
               <label className="block">
                 <span className="text-sm font-semibold text-ink-soft">Expected Salary</span>
                 <div className="mt-1 flex items-center gap-2">
-                  <select
-                    value={salaryCurrency}
-                    onChange={(event) => setSalaryCurrency(event.target.value)}
-                    className="h-11 w-16 rounded-xl border border-surface-3 bg-surface-inverse px-3 text-sm text-ink shadow-sm focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-200"
-                  >
-                    <option value="INR">₹</option>
-                    <option value="USD">$</option>
-                  </select>
+                  <div className="flex h-11 w-16 items-center justify-center rounded-xl border border-surface-3 bg-surface-inverse text-sm text-ink">
+                    ?
+                  </div>
                   <Input
                     className="flex-1"
                     ref={salaryInputRef}
