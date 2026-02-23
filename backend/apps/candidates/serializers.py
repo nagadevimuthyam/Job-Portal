@@ -314,9 +314,11 @@ class CandidateBasicDetailsSerializer(serializers.ModelSerializer):
 
 
 class CandidateSkillSerializer(serializers.ModelSerializer):
+    skill_id = serializers.UUIDField(required=False, allow_null=True, write_only=True)
+
     class Meta:
         model = CandidateSkill
-        fields = ("id", "name")
+        fields = ("id", "name", "skill_id")
 
 
 class CandidateEmploymentSerializer(serializers.ModelSerializer):

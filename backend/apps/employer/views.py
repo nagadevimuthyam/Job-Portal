@@ -10,6 +10,7 @@ from django.shortcuts import get_object_or_404
 
 from apps.masteradmin.permissions import IsEmployer
 from apps.candidates.models import CandidateProfile
+from apps.skills.models import normalize_skill_name
 from apps.candidates.views_common import calculate_profile_completion
 from apps.candidates.serializers import (
     CandidateSearchSerializer,
@@ -48,6 +49,7 @@ class CandidateSearchView(ListAPIView):
             params.get("salary_min"),
             params.get("salary_max"),
             params.get("notice_period_code"),
+            params.get("gender"),
             params.get("work_status"),
             params.get("availability_to_join"),
             params.get("education"),
@@ -97,6 +99,7 @@ class CandidateSearchView(ListAPIView):
         salary_min = self.request.query_params.get("salary_min")
         salary_max = self.request.query_params.get("salary_max")
         notice_period_code = self.request.query_params.get("notice_period_code")
+        gender = self.request.query_params.get("gender", "").strip()
         work_status = self.request.query_params.get("work_status", "").strip()
         availability = self.request.query_params.get("availability_to_join", "").strip()
         education_level = self.request.query_params.get("education", "").strip()
@@ -143,13 +146,19 @@ class CandidateSearchView(ListAPIView):
             except ValueError:
                 pass
         if skills:
-            for skill in [s.strip() for s in skills.split(",") if s.strip()]:
-                or_filters.append(Q(skills__name__icontains=skill))
+            tokens = [
+                normalize_skill_name(s)
+                for s in skills.split(",")
+                if normalize_skill_name(s)
+            ]
+            for token in tokens:
+                or_filters.append(Q(skills__normalized_name__icontains=token))
+                or_filters.append(Q(skills__skill__normalized_name__icontains=token))
         if skill_ids:
             try:
-                ids = [int(value) for value in skill_ids.split(",") if value.strip().isdigit()]
+                ids = [value for value in skill_ids.split(",") if value.strip()]
                 if ids:
-                    or_filters.append(Q(skills__id__in=ids))
+                    or_filters.append(Q(skills__skill_id__in=ids))
             except ValueError:
                 pass
         if updated_within:
@@ -160,11 +169,21 @@ class CandidateSearchView(ListAPIView):
             except ValueError:
                 pass
         if salary_min:
-            or_filters.append(Q(expected_salary__gte=salary_min))
+            try:
+                qs = qs.filter(expected_salary__gte=int(str(salary_min).replace(",", "")))
+            except ValueError:
+                pass
         if salary_max:
-            or_filters.append(Q(expected_salary__lte=salary_max))
+            try:
+                qs = qs.filter(expected_salary__lte=int(str(salary_max).replace(",", "")))
+            except ValueError:
+                pass
         if notice_period_code:
             or_filters.append(Q(notice_period_code=notice_period_code))
+        if gender:
+            gender_values = [value.strip().upper() for value in gender.split(",") if value.strip()]
+            if gender_values:
+                or_filters.append(Q(gender__in=gender_values))
         if work_status:
             or_filters.append(Q(work_status=work_status))
         if availability:

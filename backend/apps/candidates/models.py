@@ -2,6 +2,7 @@ import uuid
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from apps.skills.models import Skill, normalize_skill_name
 
 
 class CandidateProfile(models.Model):
@@ -64,13 +65,26 @@ class CandidateSkill(models.Model):
         related_name="skills",
     )
     name = models.CharField(max_length=120)
+    normalized_name = models.CharField(max_length=255, blank=True, db_index=True)
+    skill = models.ForeignKey(
+        Skill,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="candidate_skills",
+    )
 
     class Meta:
         ordering = ["name"]
-        indexes = [models.Index(fields=["name"])]
+        indexes = [models.Index(fields=["name"]), models.Index(fields=["normalized_name"])]
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        if self.name and not self.normalized_name:
+            self.normalized_name = normalize_skill_name(self.name)
+        super().save(*args, **kwargs)
 
 
 class CandidateEmployment(models.Model):

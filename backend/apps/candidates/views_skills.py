@@ -19,15 +19,25 @@ class CandidateSkillCreateView(APIView):
         profile = get_object_or_404(CandidateProfile, user=request.user)
         serializer = CandidateSkillSerializer(data=request.data)
         if serializer.is_valid():
-            skill = CandidateSkill.objects.create(profile=profile, **serializer.validated_data)
-            normalized = normalize_skill_name(skill.name)
-            if normalized:
+            skill_id = serializer.validated_data.pop("skill_id", None)
+            name = serializer.validated_data.get("name", "")
+            normalized = normalize_skill_name(name)
+            skill_obj = None
+            if skill_id:
+                skill_obj = Skill.objects.filter(id=skill_id).first()
+            if not skill_obj and normalized:
                 skill_obj, created = Skill.objects.get_or_create(
                     normalized_name=normalized,
-                    defaults={"name": skill.name, "popularity": 1},
+                    defaults={"name": name, "popularity": 1},
                 )
                 if not created:
                     Skill.objects.filter(id=skill_obj.id).update(popularity=F("popularity") + 1)
+            skill = CandidateSkill.objects.create(
+                profile=profile,
+                name=name,
+                normalized_name=normalized,
+                skill=skill_obj,
+            )
             touch_profile(profile)
             return Response(CandidateSkillSerializer(skill).data, status=status.HTTP_201_CREATED)
         return error_response(
@@ -75,7 +85,13 @@ class CandidateSkillBulkUpsertView(APIView):
             if not normalized or normalized in seen:
                 continue
             seen.add(normalized)
-            desired.append({"name": name, "normalized": normalized})
+            desired.append(
+                {
+                    "name": name,
+                    "normalized": normalized,
+                    "skill_id": item.get("id") if isinstance(item, dict) else None,
+                }
+            )
 
         existing = list(CandidateSkill.objects.filter(profile=profile))
         existing_map = {normalize_skill_name(skill.name): skill for skill in existing}
@@ -89,18 +105,27 @@ class CandidateSkillBulkUpsertView(APIView):
 
         created_skills = []
         for item in to_create:
-            created_skills.append(CandidateSkill(profile=profile, name=item["name"]))
+            skill_obj = None
+            if item.get("skill_id"):
+                skill_obj = Skill.objects.filter(id=item["skill_id"]).first()
+            if not skill_obj:
+                skill_obj, created = Skill.objects.get_or_create(
+                    normalized_name=item["normalized"],
+                    defaults={"name": item["name"], "popularity": 1},
+                )
+                if not created:
+                    Skill.objects.filter(id=skill_obj.id).update(popularity=F("popularity") + 1)
+            created_skills.append(
+                CandidateSkill(
+                    profile=profile,
+                    name=item["name"],
+                    normalized_name=item["normalized"],
+                    skill=skill_obj,
+                )
+            )
 
         if created_skills:
             CandidateSkill.objects.bulk_create(created_skills)
-
-        for item in to_create:
-            skill_obj, created = Skill.objects.get_or_create(
-                normalized_name=item["normalized"],
-                defaults={"name": item["name"], "popularity": 1},
-            )
-            if not created:
-                Skill.objects.filter(id=skill_obj.id).update(popularity=F("popularity") + 1)
 
         touch_profile(profile)
         updated = CandidateSkill.objects.filter(profile=profile)
