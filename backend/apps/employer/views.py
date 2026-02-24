@@ -1,7 +1,5 @@
 from django.utils import timezone
 from django.db.models import Q, F, ExpressionWrapper, IntegerField
-from functools import reduce
-from operator import or_
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -46,6 +44,7 @@ class CandidateSearchView(ListAPIView):
             params.get("skills"),
             params.get("skill_ids"),
             params.get("updated_within"),
+            params.get("updated_type"),
             params.get("salary_min"),
             params.get("salary_max"),
             params.get("notice_period_code"),
@@ -55,6 +54,32 @@ class CandidateSearchView(ListAPIView):
             params.get("education"),
         ]
         return any(self._has_value(value) for value in fields)
+
+    def _parse_updated_within(self, value):
+        if value is None:
+            return None
+        value = str(value).strip()
+        if not value:
+            return None
+        upper = value.upper()
+        token_map = {
+            "1_DAY": 1,
+            "3_DAYS": 3,
+            "7_DAYS": 7,
+            "15_DAYS": 15,
+            "1_MONTH": 30,
+            "3_MONTHS": 90,
+            "6_MONTHS": 180,
+            "6M": 180,
+            "1M": 30,
+        }
+        if upper in token_map:
+            return timezone.now() - timezone.timedelta(days=token_map[upper])
+        try:
+            days = int(value)
+            return timezone.now() - timezone.timedelta(days=days)
+        except ValueError:
+            return None
 
     def list(self, request, *args, **kwargs):
         if not self._has_search_inputs():
@@ -96,6 +121,7 @@ class CandidateSearchView(ListAPIView):
         skills = self.request.query_params.get("skills", "").strip()
         skill_ids = self.request.query_params.get("skill_ids", "").strip()
         updated_within = self.request.query_params.get("updated_within")
+        updated_type = self.request.query_params.get("updated_type", "").strip().lower()
         salary_min = self.request.query_params.get("salary_min")
         salary_max = self.request.query_params.get("salary_max")
         notice_period_code = self.request.query_params.get("notice_period_code")
@@ -110,27 +136,27 @@ class CandidateSearchView(ListAPIView):
         )
         qs = qs.annotate(total_experience_months_calc=total_months)
 
-        or_filters = []
-
         if keywords:
-            or_filters.append(
+            keyword_q = (
                 Q(full_name__icontains=keywords)
                 | Q(summary__icontains=keywords)
                 | Q(skills__name__icontains=keywords)
             )
+            qs = qs.filter(keyword_q)
         if location:
-            or_filters.append(
-                Q(location__icontains=location)
-                | Q(current_city__icontains=location)
-                | Q(current_state__icontains=location)
-                | Q(country__icontains=location)
+            location_q = (
+                Q(location__iexact=location)
+                | Q(current_city__iexact=location)
+                | Q(current_state__iexact=location)
+                | Q(country__iexact=location)
             )
+            qs = qs.filter(location_q)
         if city:
-            or_filters.append(Q(current_city__icontains=city))
+            qs = qs.filter(current_city__iexact=city)
         if state:
-            or_filters.append(Q(current_state__icontains=state))
+            qs = qs.filter(current_state__iexact=state)
         if country:
-            or_filters.append(Q(country__icontains=country))
+            qs = qs.filter(country__iexact=country)
         if exp_min:
             try:
                 qs = qs.filter(
@@ -145,6 +171,7 @@ class CandidateSearchView(ListAPIView):
                 )
             except ValueError:
                 pass
+        skill_q = None
         if skills:
             tokens = [
                 normalize_skill_name(s)
@@ -152,22 +179,28 @@ class CandidateSearchView(ListAPIView):
                 if normalize_skill_name(s)
             ]
             for token in tokens:
-                or_filters.append(Q(skills__normalized_name__icontains=token))
-                or_filters.append(Q(skills__skill__normalized_name__icontains=token))
+                token_q = (
+                    Q(skills__normalized_name__icontains=token)
+                    | Q(skills__skill__normalized_name__icontains=token)
+                )
+                skill_q = token_q if skill_q is None else skill_q | token_q
         if skill_ids:
-            try:
-                ids = [value for value in skill_ids.split(",") if value.strip()]
-                if ids:
-                    or_filters.append(Q(skills__skill_id__in=ids))
-            except ValueError:
-                pass
-        if updated_within:
-            try:
-                days = int(updated_within)
-                since = timezone.now() - timezone.timedelta(days=days)
-                or_filters.append(Q(updated_at__gte=since))
-            except ValueError:
-                pass
+            ids = [value for value in skill_ids.split(",") if value.strip()]
+            if ids:
+                ids_q = Q(skills__skill_id__in=ids)
+                skill_q = ids_q if skill_q is None else skill_q | ids_q
+        if skill_q is not None:
+            qs = qs.filter(skill_q)
+        if not updated_type:
+            updated_type = "active_updated"
+        cutoff = self._parse_updated_within(updated_within)
+        if cutoff:
+            if updated_type == "created":
+                qs = qs.filter(created_at__gte=cutoff).order_by("-created_at")
+            elif updated_type == "active":
+                qs = qs.filter(last_active_at__gte=cutoff).order_by("-last_active_at")
+            else:
+                qs = qs.filter(freshness_at__gte=cutoff).order_by("-freshness_at")
         if salary_min:
             try:
                 qs = qs.filter(expected_salary__gte=int(str(salary_min).replace(",", "")))
@@ -179,20 +212,23 @@ class CandidateSearchView(ListAPIView):
             except ValueError:
                 pass
         if notice_period_code:
-            or_filters.append(Q(notice_period_code=notice_period_code))
+            qs = qs.filter(notice_period_code=notice_period_code)
         if gender:
             gender_values = [value.strip().upper() for value in gender.split(",") if value.strip()]
             if gender_values:
-                or_filters.append(Q(gender__in=gender_values))
+                qs = qs.filter(gender__in=gender_values)
         if work_status:
-            or_filters.append(Q(work_status=work_status))
+            normalized_status = work_status.strip().upper()
+            if normalized_status == "FRESHER":
+                qs = qs.filter(total_experience_months_calc=0)
+            elif normalized_status == "EXPERIENCED":
+                qs = qs.filter(total_experience_months_calc__gt=0)
+            else:
+                qs = qs.filter(work_status=work_status)
         if availability:
-            or_filters.append(Q(availability_to_join=availability))
+            qs = qs.filter(availability_to_join=availability)
         if education_level:
-            or_filters.append(Q(educations__degree=education_level))
-
-        if or_filters:
-            qs = qs.filter(reduce(or_, or_filters))
+            qs = qs.filter(educations__degree=education_level)
 
         return qs.distinct()
 

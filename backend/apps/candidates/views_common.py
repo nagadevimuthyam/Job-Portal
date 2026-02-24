@@ -12,8 +12,13 @@ from .serializers import (
 
 
 def touch_profile(profile):
-    profile.updated_at = timezone.now()
-    profile.save(update_fields=["updated_at"])
+    now = timezone.now()
+    profile.updated_at = now
+    profile.profile_updated_at = now
+    profile.freshness_at = max(
+        filter(None, [profile.last_active_at, profile.profile_updated_at])
+    )
+    profile.save(update_fields=["updated_at", "profile_updated_at", "freshness_at"])
 
 
 def error_response(detail, code, errors=None, status_code=status.HTTP_400_BAD_REQUEST):

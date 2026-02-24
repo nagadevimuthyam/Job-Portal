@@ -1,7 +1,9 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from django.utils import timezone
 
 from .models import User
+from apps.candidates.models import CandidateProfile
 
 
 class LoginSerializer(TokenObtainPairSerializer):
@@ -10,6 +12,18 @@ class LoginSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
         user = self.user
+        try:
+            profile = CandidateProfile.objects.get(user=user)
+            now = timezone.now()
+            if not profile.profile_updated_at:
+                profile.profile_updated_at = profile.updated_at or now
+            profile.last_active_at = now
+            profile.freshness_at = max(
+                filter(None, [profile.last_active_at, profile.profile_updated_at])
+            )
+            profile.save(update_fields=["last_active_at", "profile_updated_at", "freshness_at"])
+        except CandidateProfile.DoesNotExist:
+            pass
         data["user"] = {
             "id": str(user.id),
             "email": user.email,

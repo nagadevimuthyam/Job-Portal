@@ -37,6 +37,9 @@ class CandidateProfile(models.Model):
     notice_period_code = models.CharField(max_length=30, null=True, blank=True)
     expected_salary = models.PositiveIntegerField(null=True, blank=True)
     salary_currency = models.CharField(max_length=8, blank=True, default="INR")
+    last_active_at = models.DateTimeField(null=True, blank=True)
+    profile_updated_at = models.DateTimeField(null=True, blank=True)
+    freshness_at = models.DateTimeField(null=True, blank=True)
     resume_file = models.FileField(upload_to="resumes/", null=True, blank=True)
     photo_file = models.FileField(upload_to="profile-photos/", null=True, blank=True)
     is_searchable = models.BooleanField(default=False)
@@ -47,10 +50,14 @@ class CandidateProfile(models.Model):
         ordering = ["-updated_at"]
         indexes = [
             models.Index(fields=["updated_at"]),
+            models.Index(fields=["created_at"]),
             models.Index(fields=["location"]),
             models.Index(fields=["notice_period_days"]),
             models.Index(fields=["notice_period_code"]),
             models.Index(fields=["expected_salary"]),
+            models.Index(fields=["last_active_at"]),
+            models.Index(fields=["profile_updated_at"]),
+            models.Index(fields=["freshness_at"]),
         ]
 
     def __str__(self):

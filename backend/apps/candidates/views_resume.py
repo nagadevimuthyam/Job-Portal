@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404
 
 from apps.masteradmin.permissions import IsCandidate
 from .models import CandidateProfile
-from .views_common import build_profile_response, error_response
+from .views_common import build_profile_response, error_response, touch_profile
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,8 @@ class CandidateResumeUploadView(APIView):
                     status_code=status.HTTP_400_BAD_REQUEST,
                 )
             profile.resume_file = file_obj
-            profile.save(update_fields=["resume_file", "updated_at"])
+            profile.save(update_fields=["resume_file"])
+            touch_profile(profile)
             profile.refresh_from_db()
             return Response(build_profile_response(profile, request))
         except Exception:
@@ -49,7 +50,8 @@ class CandidateResumeUploadView(APIView):
             if profile.resume_file:
                 profile.resume_file.delete(save=False)
             profile.resume_file = None
-            profile.save(update_fields=["resume_file", "updated_at"])
+            profile.save(update_fields=["resume_file"])
+            touch_profile(profile)
             profile.refresh_from_db()
             return Response(build_profile_response(profile, request))
         except Exception:

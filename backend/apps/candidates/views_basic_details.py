@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from apps.masteradmin.permissions import IsCandidate
 from .models import CandidateProfile
 from .serializers import CandidateBasicDetailsSerializer, CandidatePersonalDetailsSerializer, CandidateProfileSerializer
-from .views_common import build_profile_response, error_response
+from .views_common import build_profile_response, error_response, touch_profile
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +29,7 @@ class CandidateBasicDetailsView(APIView):
         if serializer.is_valid():
             try:
                 serializer.save()
+                touch_profile(profile)
                 profile.refresh_from_db()
                 return Response(build_profile_response(profile, request))
             except Exception:
@@ -73,6 +74,7 @@ class CandidatePersonalDetailsView(APIView):
         if serializer.is_valid():
             try:
                 serializer.save()
+                touch_profile(profile)
                 profile.refresh_from_db()
                 return Response(
                     CandidatePersonalDetailsSerializer(profile).data,
@@ -118,7 +120,8 @@ class CandidatePhotoUploadView(APIView):
             )
         try:
             profile.photo_file = file_obj
-            profile.save(update_fields=["photo_file", "updated_at"])
+            profile.save(update_fields=["photo_file"])
+            touch_profile(profile)
             profile.refresh_from_db()
             return Response(
                 {
