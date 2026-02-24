@@ -132,6 +132,7 @@ export default function CandidateSearch() {
     };
   }, []);
 
+
   return (
     <div className="h-[calc(100vh-64px)] -mx-6 -my-8 px-6 py-6 flex flex-col overflow-hidden">
       <div className="flex-1 min-h-0 overflow-hidden">
@@ -303,7 +304,18 @@ export default function CandidateSearch() {
         </div>
       </div>
 
-      <StickySearchBar onSearch={() => handleSearch()} onClear={handleClearFilters} />
+      <StickySearchBar
+        updatedType={safeDraftFilters.updated_type}
+        updatedWithin={safeDraftFilters.updated_within}
+        onUpdatedTypeChange={(value) =>
+          setDraftFilters({ ...safeDraftFilters, updated_type: value })
+        }
+        onUpdatedWithinChange={(value) =>
+          setDraftFilters({ ...safeDraftFilters, updated_within: value })
+        }
+        onSearch={() => handleSearch()}
+        onClear={handleClearFilters}
+      />
     </div>
   );
 }

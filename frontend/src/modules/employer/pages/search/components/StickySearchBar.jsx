@@ -1,6 +1,13 @@
 import Button from "../../../../../components/ui/Button";
 
-export default function StickySearchBar({ onSearch, onClear }) {
+export default function StickySearchBar({
+  onSearch,
+  onClear,
+  updatedType,
+  updatedWithin,
+  onUpdatedTypeChange,
+  onUpdatedWithinChange,
+}) {
   return (
     <div className="sticky bottom-0 z-30 px-4 pb-4 pt-2">
       <div className="mx-auto max-w-7xl">
@@ -10,15 +17,17 @@ export default function StickySearchBar({ onSearch, onClear }) {
               <div className="flex flex-wrap items-center gap-3">
                 <select
                   className="rounded-full border border-surface-3 bg-surface-2 px-4 py-2 text-xs font-semibold text-ink shadow-sm focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-200"
-                  defaultValue="ACTIVE_UPDATED"
+                  value={updatedType}
+                  onChange={(event) => onUpdatedTypeChange(event.target.value)}
                 >
-                  <option value="ACTIVE_UPDATED">Active/updated</option>
-                  <option value="ACTIVE">Active</option>
-                  <option value="CREATED">Created</option>
+                  <option value="active_updated">Active/updated</option>
+                  <option value="active">Active</option>
+                  <option value="created">Created</option>
                 </select>
                 <select
                   className="rounded-full border border-surface-3 bg-white px-4 py-2 text-xs font-semibold text-ink shadow-sm focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-200"
-                  defaultValue="6_MONTHS"
+                  value={updatedWithin}
+                  onChange={(event) => onUpdatedWithinChange(event.target.value)}
                 >
                   <option value="1_DAY">In last 1 day</option>
                   <option value="3_DAYS">In last 3 days</option>
