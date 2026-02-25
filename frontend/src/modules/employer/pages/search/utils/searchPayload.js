@@ -4,7 +4,7 @@ export const emptyFilters = {
   exp_min: "",
   exp_max: "",
   updated_within: "6_MONTHS",
-  updated_type: "active_updated",
+  updated_type: "active",
   salary_min: "",
   salary_max: "",
   notice_period_code: null,
@@ -34,6 +34,10 @@ export const buildSearchPayload = (filters, selectedSkills) => {
   const genderValue = Array.isArray(filters.gender)
     ? filters.gender.join(",")
     : filters.gender;
+  const updatedType =
+    filters.updated_type && filters.updated_type.toLowerCase() === "active_updated"
+      ? "active"
+      : filters.updated_type;
   const skillIds = selectedSkills
     .filter((skill) => skill.id)
     .map((skill) => skill.id)
@@ -48,6 +52,7 @@ export const buildSearchPayload = (filters, selectedSkills) => {
     salary_min: salaryMin,
     salary_max: salaryMax,
     gender: genderValue,
+    updated_type: updatedType,
     skills: skillNames,
     skill_ids: skillIds,
   });

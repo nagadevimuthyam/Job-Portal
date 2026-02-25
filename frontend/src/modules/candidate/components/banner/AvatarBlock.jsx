@@ -6,6 +6,7 @@ export default function AvatarBlock({
   displayPhoto,
   isUploadingPhoto,
   onFileChange,
+  readonly = false,
 }) {
   return (
     <div className="flex flex-col items-center gap-3">
@@ -34,7 +35,7 @@ export default function AvatarBlock({
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="group relative h-36 w-36 overflow-hidden rounded-full border border-surface-3 bg-surface-2 shadow-sm">
+          <div className={`relative h-36 w-36 overflow-hidden rounded-full border border-surface-3 bg-surface-2 shadow-sm ${readonly ? "" : "group"}`}>
             {displayPhoto ? (
               <img src={displayPhoto} alt="Profile" className="h-full w-full object-cover" />
             ) : (
@@ -45,25 +46,29 @@ export default function AvatarBlock({
                 </svg>
               </div>
             )}
-            <label
-              htmlFor="profile-photo"
-              className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-1 bg-slate-900/65 text-[11px] font-semibold text-white opacity-0 transition group-hover:opacity-100"
-            >
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 5v14" />
-                  <path d="M5 12h14" />
-                </svg>
-              </span>
-              {isUploadingPhoto ? "Uploading..." : displayPhoto ? "Replace photo" : "Add photo"}
-            </label>
-            <input
-              id="profile-photo"
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={onFileChange}
-            />
+            {!readonly && (
+              <>
+                <label
+                  htmlFor="profile-photo"
+                  className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-1 bg-slate-900/65 text-[11px] font-semibold text-white opacity-0 transition group-hover:opacity-100"
+                >
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 5v14" />
+                      <path d="M5 12h14" />
+                    </svg>
+                  </span>
+                  {isUploadingPhoto ? "Uploading..." : displayPhoto ? "Replace photo" : "Add photo"}
+                </label>
+                <input
+                  id="profile-photo"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={onFileChange}
+                />
+              </>
+            )}
           </div>
         </div>
         <span

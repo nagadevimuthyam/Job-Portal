@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import Card from "../../../components/ui/Card";
+import Button from "../../../components/ui/Button";
 import BasicDetailsModal from "./BasicDetailsModal";
 import {
   useGetProfileOverviewQuery,
@@ -16,14 +17,21 @@ import BannerMeta from "./banner/BannerMeta";
 import { detailIconMap, sectionMap } from "./banner/bannerConfig";
 import { getLabelForValue, WORK_STATUS_OPTIONS, AVAILABILITY_OPTIONS } from "../../../shared/constants/profileOptions";
 
-export default function CandidateProfileBanner({ onJumpToSection }) {
-  const { data, isLoading } = useGetProfileOverviewQuery();
-  const profile = data?.profile || {};
-  const completionPercent = data?.profile_completion_percent ?? 0;
-  const missingDetails = data?.missing_details ?? [];
-  const missingCount = data?.missing_count ?? missingDetails.length;
-  const lastUpdated = data?.last_updated;
-  const employments = data?.employments ?? [];
+export default function CandidateProfileBanner({
+  onJumpToSection,
+  mode = "candidate",
+  overviewData,
+  actionsSlot,
+}) {
+  const isEmployer = mode === "employer";
+  const { data, isLoading } = useGetProfileOverviewQuery(undefined, { skip: isEmployer });
+  const sourceData = overviewData || data;
+  const profile = sourceData?.profile || {};
+  const completionPercent = sourceData?.profile_completion_percent ?? 0;
+  const missingDetails = sourceData?.missing_details ?? [];
+  const missingCount = sourceData?.missing_count ?? missingDetails.length;
+  const lastUpdated = sourceData?.last_updated;
+  const employments = sourceData?.employments ?? [];
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [photoPreview, setPhotoPreview] = useState("");
@@ -179,12 +187,16 @@ export default function CandidateProfileBanner({ onJumpToSection }) {
     onJumpToSection(sectionMap[key] || "personal");
   };
 
-  if (isLoading) {
+  if (isLoading && !overviewData) {
     return (
       <Card className="p-6">
         <div className="h-24 w-full animate-pulse rounded-2xl bg-surface-2" />
       </Card>
     );
+  }
+
+  if (!sourceData) {
+    return null;
   }
 
   return (
@@ -198,6 +210,7 @@ export default function CandidateProfileBanner({ onJumpToSection }) {
           displayPhoto={displayPhoto}
           isUploadingPhoto={isUploadingPhoto}
           onFileChange={handlePhotoChange}
+          readonly={isEmployer}
         />
 
         <div className="space-y-3">
@@ -207,6 +220,7 @@ export default function CandidateProfileBanner({ onJumpToSection }) {
               role={employmentTitle}
               company={employmentCompany}
               onEdit={() => setIsModalOpen(true)}
+              editable={!isEmployer}
             />
             <BannerMeta updated={formattedUpdated} />
           </div>
@@ -214,48 +228,69 @@ export default function CandidateProfileBanner({ onJumpToSection }) {
         </div>
 
         <div className="space-y-3">
-          <MissingDetailsPanel
-            missingCount={missingCount}
-            topMissing={topMissing}
-            onJump={handleJump}
-            ctaLabel={{
-              text: `Add ${missingCount || missingDetails.length} missing details`,
-              onClick: () => handleJump(missingDetails[0]?.key || "personal"),
-            }}
-          />
-          <div className="rounded-2xl border border-surface-3 bg-white/70 p-4 shadow-soft">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-ink">Profile visibility</p>
-                <p className="text-xs text-ink-faint">Make my profile visible to employers</p>
+          {isEmployer ? (
+            actionsSlot || (
+              <div className="flex flex-col gap-3">
+                <Button type="button" variant="outline">
+                  Shortlist
+                </Button>
+                <Button type="button" variant="outline">
+                  Save to Folder
+                </Button>
+                <Button type="button" variant="outline">
+                  Add Note
+                </Button>
+                <Button type="button">
+                  Download Resume
+                </Button>
               </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={isSearchable}
-                disabled={isSavingVisibility || (!canEnableVisibility && !isSearchable)}
-                onClick={handleToggleVisibility}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-                  isSearchable ? "bg-brand-600" : "bg-slate-300"
-                } ${isSavingVisibility || (!canEnableVisibility && !isSearchable) ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
-              >
-                <span
-                  className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
-                    isSearchable ? "translate-x-5" : "translate-x-1"
-                  }`}
-                />
-              </button>
-            </div>
-            {!canEnableVisibility && !isSearchable && (
-              <p className="mt-2 text-xs text-ink-faint">
-                Complete at least 60% of your profile to enable visibility.
-              </p>
-            )}
-          </div>
+            )
+          ) : (
+            <>
+              <MissingDetailsPanel
+                missingCount={missingCount}
+                topMissing={topMissing}
+                onJump={handleJump}
+                ctaLabel={{
+                  text: `Add ${missingCount || missingDetails.length} missing details`,
+                  onClick: () => handleJump(missingDetails[0]?.key || "personal"),
+                }}
+              />
+              <div className="rounded-2xl border border-surface-3 bg-white/70 p-4 shadow-soft">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-ink">Profile visibility</p>
+                    <p className="text-xs text-ink-faint">Make my profile visible to employers</p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={isSearchable}
+                    disabled={isSavingVisibility || (!canEnableVisibility && !isSearchable)}
+                    onClick={handleToggleVisibility}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                      isSearchable ? "bg-brand-600" : "bg-slate-300"
+                    } ${isSavingVisibility || (!canEnableVisibility && !isSearchable) ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+                  >
+                    <span
+                      className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
+                        isSearchable ? "translate-x-5" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
+                </div>
+                {!canEnableVisibility && !isSearchable && (
+                  <p className="mt-2 text-xs text-ink-faint">
+                    Complete at least 60% of your profile to enable visibility.
+                  </p>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
-      {isModalOpen && (
+      {isModalOpen && !isEmployer && (
         <BasicDetailsModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}

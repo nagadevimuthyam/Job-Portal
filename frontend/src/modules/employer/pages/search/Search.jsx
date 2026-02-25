@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
 import { skipToken } from "@reduxjs/toolkit/query";
 import Input from "../../../../components/ui/Input";
 import SkillMultiSelect from "../../../../components/inputs/SkillMultiSelect/SkillMultiSelect";
@@ -22,7 +21,6 @@ import RecentSavedSidebar from "./components/RecentSavedSidebar";
 import StickySearchBar from "./components/StickySearchBar";
 
 export default function CandidateSearch() {
-  const navigate = useNavigate();
   const salaryMinRef = useRef(null);
   const salaryMaxRef = useRef(null);
 
@@ -44,10 +42,14 @@ export default function CandidateSearch() {
   };
 
   const handleSearch = (nextFilters = draftFilters, nextSkills = selectedSkills) => {
+    const normalizedFilters =
+      nextFilters?.updated_type?.toLowerCase() === "active_updated"
+        ? { ...nextFilters, updated_type: "active" }
+        : nextFilters;
     const payload = buildSearchPayload(
       {
-        ...nextFilters,
-        gender: Array.isArray(nextFilters.gender) ? nextFilters.gender : [],
+        ...normalizedFilters,
+        gender: Array.isArray(normalizedFilters.gender) ? normalizedFilters.gender : [],
       },
       nextSkills
     );
@@ -58,7 +60,7 @@ export default function CandidateSearch() {
     setAppliedFilters(payload);
     const recentEntry = {
       name: buildSearchLabel(nextFilters, nextSkills),
-      params: nextFilters,
+      params: normalizedFilters,
       skills: nextSkills,
       createdAt: new Date().toISOString(),
     };
@@ -70,14 +72,18 @@ export default function CandidateSearch() {
       toast.error("Enter a name to save this search.");
       return;
     }
-    const payload = buildSearchPayload(draftFilters, selectedSkills);
+    const normalizedFilters =
+      draftFilters?.updated_type?.toLowerCase() === "active_updated"
+        ? { ...draftFilters, updated_type: "active" }
+        : draftFilters;
+    const payload = buildSearchPayload(normalizedFilters, selectedSkills);
     if (Object.keys(payload).length === 0) {
       toast.error("Add filters before saving a search.");
       return;
     }
     const entry = {
       name: saveName.trim(),
-      params: draftFilters,
+      params: normalizedFilters,
       skills: selectedSkills,
       createdAt: new Date().toISOString(),
     };
@@ -87,9 +93,13 @@ export default function CandidateSearch() {
   };
 
   const handleApplyStored = (item) => {
-    setDraftFilters(item.params);
+    const nextParams =
+      item.params?.updated_type?.toLowerCase() === "active_updated"
+        ? { ...item.params, updated_type: "active" }
+        : item.params;
+    setDraftFilters(nextParams);
     setSelectedSkills(item.skills || []);
-    handleSearch(item.params, item.skills || []);
+    handleSearch(nextParams, item.skills || []);
   };
 
   const handleClearFilters = () => {
@@ -134,165 +144,189 @@ export default function CandidateSearch() {
 
 
   return (
-    <div className="h-[calc(100vh-64px)] -mx-6 -my-8 px-6 py-6 flex flex-col overflow-hidden">
+    <div className="h-[calc(100vh-64px)] -mx-6 -my-8 px-5 py-6 flex flex-col overflow-hidden">
       <div className="flex-1 min-h-0 overflow-hidden">
-        <div className="mx-auto max-w-7xl grid gap-4 lg:grid-cols-[1fr_360px] h-full">
-          <main className="min-h-0 overflow-y-auto soft-scrollbar pr-2 pb-36 space-y-6">
-            <SearchFormCard
-              resultCount={resultCount}
-              saveName={saveName}
-              onSaveNameChange={setSaveName}
-              onSaveSearch={handleSaveSearch}
-            >
-              <div className="grid gap-4 md:grid-cols-2">
-                <Input
-                  label="Keywords"
-                  placeholder="Enter Keywords like job title, skills, etc."
-                  value={safeDraftFilters.keywords}
-                  onChange={(event) =>
-                  setDraftFilters({ ...safeDraftFilters, keywords: event.target.value })
-                  }
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      handleSearch();
+        <div className="mx-auto max-w-7xl grid gap-3 lg:grid-cols-[300px_1fr_260px] h-full">
+          <section className="min-h-0 flex flex-col">
+            <div className="min-h-0 overflow-y-auto soft-scrollbar pr-1 pb-28">
+              <div className="space-y-6">
+                <SearchFormCard
+                  saveName={saveName}
+                  onSaveNameChange={setSaveName}
+                  onSaveSearch={handleSaveSearch}
+                >
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Input
+                      label="Keywords"
+                      placeholder="Enter Keywords like job title, skills, etc."
+                      value={safeDraftFilters.keywords}
+                      onChange={(event) =>
+                        setDraftFilters({ ...safeDraftFilters, keywords: event.target.value })
+                      }
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          handleSearch();
+                        }
+                      }}
+                    />
+                    <Input
+                      label="Location"
+                      placeholder="Enter current location"
+                      value={safeDraftFilters.location}
+                      onChange={(event) =>
+                        setDraftFilters({ ...safeDraftFilters, location: event.target.value })
+                      }
+                    />
+                    <ExperienceDropdown
+                      label="Experience Min"
+                      value={safeDraftFilters.exp_min}
+                      onChange={(value) =>
+                        setDraftFilters({ ...safeDraftFilters, exp_min: value })
+                      }
+                    />
+                    <ExperienceDropdown
+                      label="Experience Max"
+                      value={safeDraftFilters.exp_max}
+                      onChange={(value) =>
+                        setDraftFilters({ ...safeDraftFilters, exp_max: value })
+                      }
+                    />
+                    <div className="md:col-span-2 space-y-2">
+                      <p className="text-sm font-semibold text-ink-soft">Skills</p>
+                      <SkillMultiSelect
+                        value={selectedSkills}
+                        onChange={setSelectedSkills}
+                        placeholder="Search skills"
+                        minItems={0}
+                      />
+                    </div>
+                    <div>
+                      <span className="text-sm font-semibold text-ink-soft">Salary Min</span>
+                      <div className="mt-1 flex items-center gap-2">
+                        <div className="flex h-11 w-16 items-center justify-center rounded-xl border border-surface-3 bg-surface-inverse text-sm text-ink">₹</div>
+                        <Input
+                          className="flex-1"
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="Lacs"
+                          ref={salaryMinRef}
+                          value={formatINR(safeDraftFilters.salary_min)}
+                          onChange={(event) => {
+                            const input = event.target;
+                            const prevValue = input.value;
+                            const prevPos = input.selectionStart ?? prevValue.length;
+                            const prevCommas = (prevValue.match(/,/g) || []).length;
+                            const rawDigits = prevValue.replace(/[^\d]/g, "");
+                            const nextRaw = rawDigits.slice(0, 9);
+                            const nextDisplay = formatINR(nextRaw);
+                            const nextCommas = (nextDisplay.match(/,/g) || []).length;
+                            setDraftFilters({ ...safeDraftFilters, salary_min: nextRaw });
+                            requestAnimationFrame(() => {
+                              const el = salaryMinRef.current;
+                              if (!el) return;
+                              const delta = nextCommas - prevCommas;
+                              const nextPos = Math.max(0, prevPos + delta);
+                              el.setSelectionRange(nextPos, nextPos);
+                            });
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-sm font-semibold text-ink-soft">Salary Max</span>
+                      <div className="mt-1 flex items-center gap-2">
+                        <div className="flex h-11 w-16 items-center justify-center rounded-xl border border-surface-3 bg-surface-inverse text-sm text-ink">₹</div>
+                        <Input
+                          className="flex-1"
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="Lacs"
+                          ref={salaryMaxRef}
+                          value={formatINR(safeDraftFilters.salary_max)}
+                          onChange={(event) => {
+                            const input = event.target;
+                            const prevValue = input.value;
+                            const prevPos = input.selectionStart ?? prevValue.length;
+                            const prevCommas = (prevValue.match(/,/g) || []).length;
+                            const rawDigits = prevValue.replace(/[^\d]/g, "");
+                            const nextRaw = rawDigits.slice(0, 9);
+                            const nextDisplay = formatINR(nextRaw);
+                            const nextCommas = (nextDisplay.match(/,/g) || []).length;
+                            setDraftFilters({ ...safeDraftFilters, salary_max: nextRaw });
+                            requestAnimationFrame(() => {
+                              const el = salaryMaxRef.current;
+                              if (!el) return;
+                              const delta = nextCommas - prevCommas;
+                              const nextPos = Math.max(0, prevPos + delta);
+                              el.setSelectionRange(nextPos, nextPos);
+                            });
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <NoticePeriodPills
+                      value={safeDraftFilters.notice_period_code}
+                      onChange={(value) =>
+                        setDraftFilters({ ...safeDraftFilters, notice_period_code: value })
+                      }
+                    />
+                  </div>
+
+                  <EducationDetails
+                    value={safeDraftFilters.education}
+                    onChange={(value) =>
+                      setDraftFilters({ ...safeDraftFilters, education: value })
                     }
-                  }}
-                />
-                <Input
-                  label="Location"
-                  placeholder="Enter current location"
-                  value={safeDraftFilters.location}
-                  onChange={(event) =>
-                  setDraftFilters({ ...safeDraftFilters, location: event.target.value })
-                  }
-                />
-                <ExperienceDropdown
-                  label="Experience Min"
-                  value={safeDraftFilters.exp_min}
-                  onChange={(value) =>
-                    setDraftFilters({ ...safeDraftFilters, exp_min: value })
-                  }
-                />
-                <ExperienceDropdown
-                  label="Experience Max"
-                  value={safeDraftFilters.exp_max}
-                  onChange={(value) =>
-                    setDraftFilters({ ...safeDraftFilters, exp_max: value })
-                  }
-                />
-                <div className="md:col-span-2 space-y-2">
-                  <p className="text-sm font-semibold text-ink-soft">Skills</p>
-                  <SkillMultiSelect
-                    value={selectedSkills}
-                    onChange={setSelectedSkills}
-                    placeholder="Search skills"
-                    minItems={0}
                   />
-                </div>
-                <div>
-                  <span className="text-sm font-semibold text-ink-soft">Salary Min</span>
-                  <div className="mt-1 flex items-center gap-2">
-                    <div className="flex h-11 w-16 items-center justify-center rounded-xl border border-surface-3 bg-surface-inverse text-sm text-ink">
-                      ₹
-                    </div>
-                    <Input
-                      className="flex-1"
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="Lacs"
-                      ref={salaryMinRef}
-                      value={formatINR(safeDraftFilters.salary_min)}
-                      onChange={(event) => {
-                        const input = event.target;
-                        const prevValue = input.value;
-                        const prevPos = input.selectionStart ?? prevValue.length;
-                        const prevCommas = (prevValue.match(/,/g) || []).length;
-                        const rawDigits = prevValue.replace(/[^\d]/g, "");
-                        const nextRaw = rawDigits.slice(0, 9);
-                        const nextDisplay = formatINR(nextRaw);
-                        const nextCommas = (nextDisplay.match(/,/g) || []).length;
-                    setDraftFilters({ ...safeDraftFilters, salary_min: nextRaw });
-                        requestAnimationFrame(() => {
-                          const el = salaryMinRef.current;
-                          if (!el) return;
-                          const delta = nextCommas - prevCommas;
-                          const nextPos = Math.max(0, prevPos + delta);
-                          el.setSelectionRange(nextPos, nextPos);
-                        });
-                      }}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <span className="text-sm font-semibold text-ink-soft">Salary Max</span>
-                  <div className="mt-1 flex items-center gap-2">
-                    <div className="flex h-11 w-16 items-center justify-center rounded-xl border border-surface-3 bg-surface-inverse text-sm text-ink">
-                      ₹
-                    </div>
-                    <Input
-                      className="flex-1"
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="Lacs"
-                      ref={salaryMaxRef}
-                      value={formatINR(safeDraftFilters.salary_max)}
-                      onChange={(event) => {
-                        const input = event.target;
-                        const prevValue = input.value;
-                        const prevPos = input.selectionStart ?? prevValue.length;
-                        const prevCommas = (prevValue.match(/,/g) || []).length;
-                        const rawDigits = prevValue.replace(/[^\d]/g, "");
-                        const nextRaw = rawDigits.slice(0, 9);
-                        const nextDisplay = formatINR(nextRaw);
-                        const nextCommas = (nextDisplay.match(/,/g) || []).length;
-                    setDraftFilters({ ...safeDraftFilters, salary_max: nextRaw });
-                        requestAnimationFrame(() => {
-                          const el = salaryMaxRef.current;
-                          if (!el) return;
-                          const delta = nextCommas - prevCommas;
-                          const nextPos = Math.max(0, prevPos + delta);
-                          el.setSelectionRange(nextPos, nextPos);
-                        });
-                      }}
-                    />
-                  </div>
-                </div>
-                <NoticePeriodPills
-                  value={safeDraftFilters.notice_period_code}
-                  onChange={(value) =>
-                    setDraftFilters({ ...safeDraftFilters, notice_period_code: value })
-                  }
-                />
+                  <EmploymentDetails
+                    value={safeDraftFilters.work_status}
+                    onChange={(value) =>
+                      setDraftFilters({ ...safeDraftFilters, work_status: value })
+                    }
+                  />
+                  <AdditionalDetails
+                    value={safeDraftFilters.gender}
+                    onChange={(next) =>
+                      setDraftFilters({ ...safeDraftFilters, gender: next })
+                    }
+                  />
+                </SearchFormCard>
               </div>
-
-              <EducationDetails
-                value={safeDraftFilters.education}
-                onChange={(value) =>
-                  setDraftFilters({ ...safeDraftFilters, education: value })
-                }
-              />
-              <EmploymentDetails
-                value={safeDraftFilters.work_status}
-                onChange={(value) =>
-                  setDraftFilters({ ...safeDraftFilters, work_status: value })
-                }
-              />
-              <AdditionalDetails
-                value={safeDraftFilters.gender}
-                onChange={(next) => setDraftFilters({ ...safeDraftFilters, gender: next })}
-              />
-            </SearchFormCard>
-
-            <ResultsList
-              appliedFilters={appliedFilters}
-              isLoading={isLoading}
-              results={results}
-              onViewProfile={(id) => navigate(`/employer/candidates/${id}`)}
+            </div>
+            <StickySearchBar
+              updatedType={safeDraftFilters.updated_type}
+              updatedWithin={safeDraftFilters.updated_within}
+              onUpdatedTypeChange={(value) =>
+                setDraftFilters({ ...safeDraftFilters, updated_type: value })
+              }
+              onUpdatedWithinChange={(value) =>
+                setDraftFilters({ ...safeDraftFilters, updated_within: value })
+              }
+              onSearch={() => handleSearch()}
+              onClear={handleClearFilters}
             />
+          </section>
 
-            <div className="h-24" />
-          </main>
+          <section className="min-h-0 overflow-y-auto soft-scrollbar pr-2">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-ink">Results: {resultCount}</h2>
+              </div>
+              <ResultsList
+                appliedFilters={appliedFilters}
+                isLoading={isLoading}
+                results={results}
+                onViewProfile={(id) =>
+                  window.open(`/employer/candidates/${id}`, "_blank", "noopener,noreferrer")
+                }
+                onViewResume={(url) =>
+                  window.open(url, "_blank", "noopener,noreferrer")
+                }
+              />
+              <div className="h-24" />
+            </div>
+          </section>
 
           <RecentSavedSidebar
             activeTab={activeTab}
@@ -303,19 +337,6 @@ export default function CandidateSearch() {
           />
         </div>
       </div>
-
-      <StickySearchBar
-        updatedType={safeDraftFilters.updated_type}
-        updatedWithin={safeDraftFilters.updated_within}
-        onUpdatedTypeChange={(value) =>
-          setDraftFilters({ ...safeDraftFilters, updated_type: value })
-        }
-        onUpdatedWithinChange={(value) =>
-          setDraftFilters({ ...safeDraftFilters, updated_within: value })
-        }
-        onSearch={() => handleSearch()}
-        onClear={handleClearFilters}
-      />
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { useRef } from "react";
 import { useParams } from "react-router-dom";
 import Skeleton from "../../../components/ui/Skeleton";
 import ProfileLayout from "../../candidate/components/ProfileLayout";
-import ProfileCompletionCard from "../../candidate/components/ProfileCompletionCard";
+import CandidateProfileBanner from "../../candidate/components/CandidateProfileBanner";
 import ProfileSectionCard from "../../candidate/components/ProfileSectionCard";
 import ResumeCard from "../../candidate/components/ResumeCard";
 import Button from "../../../components/ui/Button";
@@ -36,6 +36,16 @@ export default function CandidateProfile() {
   const noticePeriodLabel =
     noticePeriodOptions.find((option) => option.value === profile?.notice_period_code)
       ?.label || "-";
+  const resumeUrl = profile?.resume_url;
+  const overviewData = {
+    profile,
+    skills,
+    employments,
+    profile_completion_percent: data?.profile_completion_percent ?? 0,
+    last_updated: data?.last_updated,
+    missing_details: [],
+    missing_count: 0,
+  };
 
   const quickLinks = [
     { id: "resume", label: "Resume" },
@@ -71,42 +81,50 @@ export default function CandidateProfile() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-ink">{profile?.full_name || "Candidate Profile"}</h1>
-        <p className="text-sm text-ink-faint">{profile?.location || "Location not provided"}</p>
-      </div>
+      <CandidateProfileBanner
+        mode="employer"
+        overviewData={overviewData}
+        actionsSlot={
+          <div className="flex flex-col gap-3">
+            <Button type="button" variant="outline">
+              Shortlist
+            </Button>
+            <Button type="button" variant="outline">
+              Save to Folder
+            </Button>
+            <Button type="button" variant="outline">
+              Add Note
+            </Button>
+            <Button
+              type="button"
+              onClick={() => resumeUrl && window.open(resumeUrl, "_blank", "noopener,noreferrer")}
+              disabled={!resumeUrl}
+            >
+              Download Resume
+            </Button>
+          </div>
+        }
+      />
 
       <ProfileLayout
         top={
-          <div className="space-y-4">
-            <ProfileCompletionCard
-              percent={data?.profile_completion_percent ?? 0}
-              lastUpdated={data?.last_updated}
-              subtitle="Candidate profile snapshot."
-            />
-            <div className="rounded-xl border border-surface-3 bg-white/70 px-4 py-3 md:block">
-              <div className="flex gap-3 overflow-x-auto pb-2">
-                {quickLinks.map((link) => (
-                  <button
-                    key={link.id}
-                    type="button"
-                    onClick={() => handleQuickLink(link.id)}
-                    className="whitespace-nowrap rounded-full border border-surface-3 px-4 py-2 text-xs font-semibold text-ink hover:bg-surface-2"
-                  >
-                    {link.label}
-                  </button>
-                ))}
-              </div>
+          <div className="rounded-xl border border-surface-3 bg-white/70 px-4 py-3 md:block">
+            <div className="flex gap-3 overflow-x-auto pb-2">
+              {quickLinks.map((link) => (
+                <button
+                  key={link.id}
+                  type="button"
+                  onClick={() => handleQuickLink(link.id)}
+                  className="whitespace-nowrap rounded-full border border-surface-3 px-4 py-2 text-xs font-semibold text-ink hover:bg-surface-2"
+                >
+                  {link.label}
+                </button>
+              ))}
             </div>
           </div>
         }
         sidebar={
           <div className="space-y-4 lg:sticky lg:top-24">
-            <ProfileCompletionCard
-              percent={data?.profile_completion_percent ?? 0}
-              lastUpdated={data?.last_updated}
-              subtitle="Candidate profile snapshot."
-            />
             <div className="rounded-xl border border-surface-3 bg-white/70 px-4 py-4 shadow-soft">
               <p className="text-xs font-semibold uppercase tracking-wide text-ink-faint">Quick links</p>
               <div className="mt-3 space-y-2 text-sm">
