@@ -191,16 +191,17 @@ class CandidateSearchView(ListAPIView):
                 skill_q = ids_q if skill_q is None else skill_q | ids_q
         if skill_q is not None:
             qs = qs.filter(skill_q)
-        if not updated_type:
-            updated_type = "active_updated"
+        normalized_type = (updated_type or "").lower()
+        if normalized_type in {"active_updated", "active/updated"}:
+            normalized_type = "active"
+        if not normalized_type:
+            normalized_type = "active"
         cutoff = self._parse_updated_within(updated_within)
         if cutoff:
-            if updated_type == "created":
+            if normalized_type == "created":
                 qs = qs.filter(created_at__gte=cutoff).order_by("-created_at")
-            elif updated_type == "active":
-                qs = qs.filter(last_active_at__gte=cutoff).order_by("-last_active_at")
             else:
-                qs = qs.filter(freshness_at__gte=cutoff).order_by("-freshness_at")
+                qs = qs.filter(last_active_at__gte=cutoff).order_by("-last_active_at")
         if salary_min:
             try:
                 qs = qs.filter(expected_salary__gte=int(str(salary_min).replace(",", "")))
