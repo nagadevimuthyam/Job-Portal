@@ -10,6 +10,7 @@ from apps.skills.models import Skill, normalize_skill_name
 from .models import CandidateProfile, CandidateSkill
 from .serializers import CandidateSkillSerializer
 from .views_common import error_response, touch_profile
+from .utils.profile_completion import update_profile_completion
 
 
 class CandidateSkillCreateView(APIView):
@@ -39,6 +40,7 @@ class CandidateSkillCreateView(APIView):
                 skill=skill_obj,
             )
             touch_profile(profile)
+            update_profile_completion(profile)
             return Response(CandidateSkillSerializer(skill).data, status=status.HTTP_201_CREATED)
         return error_response(
             "Invalid skill payload.",
@@ -55,6 +57,7 @@ class CandidateSkillDeleteView(APIView):
         skill = get_object_or_404(CandidateSkill, id=skill_id, profile=profile)
         skill.delete()
         touch_profile(profile)
+        update_profile_completion(profile)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -128,5 +131,6 @@ class CandidateSkillBulkUpsertView(APIView):
             CandidateSkill.objects.bulk_create(created_skills)
 
         touch_profile(profile)
+        update_profile_completion(profile)
         updated = CandidateSkill.objects.filter(profile=profile)
         return Response(CandidateSkillSerializer(updated, many=True).data, status=status.HTTP_200_OK)

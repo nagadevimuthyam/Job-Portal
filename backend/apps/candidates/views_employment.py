@@ -8,6 +8,7 @@ from apps.masteradmin.permissions import IsCandidate
 from .models import CandidateProfile, CandidateEmployment
 from .serializers import CandidateEmploymentSerializer
 from .views_common import error_response, touch_profile
+from .utils.profile_completion import update_profile_completion
 
 
 class CandidateEmploymentCreateView(APIView):
@@ -21,6 +22,7 @@ class CandidateEmploymentCreateView(APIView):
                 profile=profile, **serializer.validated_data
             )
             touch_profile(profile)
+            update_profile_completion(profile)
             return Response(
                 CandidateEmploymentSerializer(employment).data, status=status.HTTP_201_CREATED
             )
@@ -41,6 +43,7 @@ class CandidateEmploymentUpdateDeleteView(APIView):
         if serializer.is_valid():
             serializer.save()
             touch_profile(profile)
+            update_profile_completion(profile)
             return Response(serializer.data)
         return error_response(
             "Invalid employment payload.",
@@ -53,4 +56,5 @@ class CandidateEmploymentUpdateDeleteView(APIView):
         employment = get_object_or_404(CandidateEmployment, id=employment_id, profile=profile)
         employment.delete()
         touch_profile(profile)
+        update_profile_completion(profile)
         return Response(status=status.HTTP_204_NO_CONTENT)

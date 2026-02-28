@@ -212,8 +212,24 @@ class CandidateSearchView(ListAPIView):
                 qs = qs.filter(expected_salary__lte=int(str(salary_max).replace(",", "")))
             except ValueError:
                 pass
-        if notice_period_code:
-            qs = qs.filter(notice_period_code=notice_period_code)
+        if notice_period_code is not None:
+            normalized_notice = str(notice_period_code).strip()
+            immediate_tokens = {
+                "",
+                "0",
+                "ANY",
+                "IMMEDIATE_JOINER",
+                "IMMEDIATE",
+            }
+            if normalized_notice.upper() in immediate_tokens:
+                qs = qs.filter(
+                    Q(notice_period_code__isnull=True)
+                    | Q(notice_period_code="")
+                    | Q(notice_period_code="0")
+                    | Q(notice_period_code__in=["IMMEDIATE_JOINER", "IMMEDIATE", "ANY"])
+                )
+            elif normalized_notice:
+                qs = qs.filter(notice_period_code=normalized_notice)
         if gender:
             gender_values = [value.strip().upper() for value in gender.split(",") if value.strip()]
             if gender_values:

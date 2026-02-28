@@ -42,6 +42,10 @@ class CandidateProfile(models.Model):
     freshness_at = models.DateTimeField(null=True, blank=True)
     resume_file = models.FileField(upload_to="resumes/", null=True, blank=True)
     photo_file = models.FileField(upload_to="profile-photos/", null=True, blank=True)
+    profile_completion_percent = models.PositiveSmallIntegerField(
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+    )
     is_searchable = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)

@@ -9,6 +9,7 @@ from apps.masteradmin.permissions import IsCandidate
 from .models import CandidateProfile
 from .serializers import CandidateBasicDetailsSerializer, CandidatePersonalDetailsSerializer, CandidateProfileSerializer
 from .views_common import build_profile_response, error_response, touch_profile
+from .utils.profile_completion import update_profile_completion
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,7 @@ class CandidateBasicDetailsView(APIView):
             try:
                 serializer.save()
                 touch_profile(profile)
+                update_profile_completion(profile)
                 profile.refresh_from_db()
                 return Response(build_profile_response(profile, request))
             except Exception:
@@ -75,6 +77,7 @@ class CandidatePersonalDetailsView(APIView):
             try:
                 serializer.save()
                 touch_profile(profile)
+                update_profile_completion(profile)
                 profile.refresh_from_db()
                 return Response(
                     CandidatePersonalDetailsSerializer(profile).data,

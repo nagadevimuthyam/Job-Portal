@@ -8,6 +8,7 @@ from apps.masteradmin.permissions import IsCandidate
 from .models import CandidateProfile, CandidateEducation
 from .serializers import CandidateEducationSerializer
 from .views_common import error_response, touch_profile
+from .utils.profile_completion import update_profile_completion
 
 
 class CandidateEducationCreateView(APIView):
@@ -19,6 +20,7 @@ class CandidateEducationCreateView(APIView):
         if serializer.is_valid():
             education = CandidateEducation.objects.create(profile=profile, **serializer.validated_data)
             touch_profile(profile)
+            update_profile_completion(profile)
             return Response(
                 CandidateEducationSerializer(education).data, status=status.HTTP_201_CREATED
             )
@@ -39,6 +41,7 @@ class CandidateEducationUpdateDeleteView(APIView):
         if serializer.is_valid():
             serializer.save()
             touch_profile(profile)
+            update_profile_completion(profile)
             return Response(serializer.data)
         return error_response(
             "Invalid education payload.",
@@ -51,4 +54,5 @@ class CandidateEducationUpdateDeleteView(APIView):
         education = get_object_or_404(CandidateEducation, id=education_id, profile=profile)
         education.delete()
         touch_profile(profile)
+        update_profile_completion(profile)
         return Response(status=status.HTTP_204_NO_CONTENT)

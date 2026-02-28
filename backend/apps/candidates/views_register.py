@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 
 from .serializers import CandidateRegisterSerializer, CandidateProfileSerializer
 from .views_common import error_response
+from .utils.profile_completion import update_profile_completion
 
 
 class CandidateRegisterView(APIView):
@@ -13,6 +14,7 @@ class CandidateRegisterView(APIView):
         serializer = CandidateRegisterSerializer(data=request.data)
         if serializer.is_valid():
             profile = serializer.save()
+            update_profile_completion(profile)
             return Response(CandidateProfileSerializer(profile).data, status=status.HTTP_201_CREATED)
         return error_response(
             "Invalid registration payload.",

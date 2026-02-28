@@ -8,6 +8,7 @@ from apps.masteradmin.permissions import IsCandidate
 from .models import CandidateProfile, CandidateProject
 from .serializers import CandidateProjectSerializer
 from .views_common import error_response, touch_profile
+from .utils.profile_completion import update_profile_completion
 
 
 class CandidateProjectCreateView(APIView):
@@ -19,6 +20,7 @@ class CandidateProjectCreateView(APIView):
         if serializer.is_valid():
             project = CandidateProject.objects.create(profile=profile, **serializer.validated_data)
             touch_profile(profile)
+            update_profile_completion(profile)
             return Response(
                 CandidateProjectSerializer(project).data, status=status.HTTP_201_CREATED
             )
@@ -39,6 +41,7 @@ class CandidateProjectUpdateDeleteView(APIView):
         if serializer.is_valid():
             serializer.save()
             touch_profile(profile)
+            update_profile_completion(profile)
             return Response(serializer.data)
         return error_response(
             "Invalid project payload.",
@@ -51,4 +54,5 @@ class CandidateProjectUpdateDeleteView(APIView):
         project = get_object_or_404(CandidateProject, id=project_id, profile=profile)
         project.delete()
         touch_profile(profile)
+        update_profile_completion(profile)
         return Response(status=status.HTTP_204_NO_CONTENT)
