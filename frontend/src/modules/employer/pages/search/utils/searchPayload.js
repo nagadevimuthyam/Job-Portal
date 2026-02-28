@@ -38,6 +38,8 @@ export const buildSearchPayload = (filters, selectedSkills) => {
     filters.updated_type && filters.updated_type.toLowerCase() === "active_updated"
       ? "active"
       : filters.updated_type;
+  const noticePeriodCode =
+    filters.notice_period_code === "" ? "IMMEDIATE_JOINER" : filters.notice_period_code;
   const skillIds = selectedSkills
     .filter((skill) => skill.id)
     .map((skill) => skill.id)
@@ -53,6 +55,7 @@ export const buildSearchPayload = (filters, selectedSkills) => {
     salary_max: salaryMax,
     gender: genderValue,
     updated_type: updatedType,
+    notice_period_code: noticePeriodCode,
     skills: skillNames,
     skill_ids: skillIds,
   });

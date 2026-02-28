@@ -17,7 +17,7 @@ import EducationDetails from "./components/EducationDetails";
 import EmploymentDetails from "./components/EmploymentDetails";
 import AdditionalDetails from "./components/AdditionalDetails";
 import ResultsList from "./components/ResultsList";
-import RecentSavedSidebar from "./components/RecentSavedSidebar";
+import EditSectionModal from "../../../candidate/components/EditSectionModal";
 import StickySearchBar from "./components/StickySearchBar";
 
 export default function CandidateSearch() {
@@ -30,7 +30,7 @@ export default function CandidateSearch() {
   const [saveName, setSaveName] = useState("");
   const [recentSearches, setRecentSearches] = useState([]);
   const [savedSearches, setSavedSearches] = useState([]);
-  const [activeTab, setActiveTab] = useState("recent");
+  const [searchModal, setSearchModal] = useState(null);
 
   const queryArg = appliedFilters ? appliedFilters : skipToken;
   const { data, isLoading } = useSearchCandidatesQuery(queryArg);
@@ -119,6 +119,8 @@ export default function CandidateSearch() {
   ];
   const displayedRecent = recentSearches.length ? recentSearches : recentFallback;
   const displayedSaved = savedSearches.length ? savedSearches : savedFallback;
+  const modalItems = searchModal === "recent" ? displayedRecent : displayedSaved;
+  const modalTitle = searchModal === "recent" ? "Recent searches" : "Saved searches";
 
   useEffect(() => {
     const handleClickAway = (event) => {
@@ -144,9 +146,9 @@ export default function CandidateSearch() {
 
 
   return (
-    <div className="h-[calc(100vh-64px)] -mx-6 -my-8 px-5 py-6 flex flex-col overflow-hidden">
+    <div className="h-[calc(100vh-64px)] -mx-6 -my-8 px-0 py-6 flex flex-col overflow-hidden">
       <div className="flex-1 min-h-0 overflow-hidden">
-        <div className="mx-auto max-w-7xl grid gap-3 lg:grid-cols-[300px_1fr_260px] h-full">
+        <div className="mx-auto max-w-full grid gap-3 lg:grid-cols-[360px_1fr] h-full">
           <section className="min-h-0 flex flex-col">
             <div className="min-h-0 overflow-y-auto soft-scrollbar pr-1 pb-28">
               <div className="space-y-6">
@@ -310,8 +312,25 @@ export default function CandidateSearch() {
 
           <section className="min-h-0 overflow-y-auto soft-scrollbar pr-2">
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-lg font-semibold text-ink">Results: {resultCount}</h2>
+                <div className="flex items-center gap-2 text-sm font-semibold text-ink-faint">
+                  <button
+                    type="button"
+                    className="transition text-ink hover:text-ink"
+                    onClick={() => setSearchModal("recent")}
+                  >
+                    Recent searches
+                  </button>
+                  <span className="text-ink-faint">|</span>
+                  <button
+                    type="button"
+                    className="transition text-ink hover:text-ink"
+                    onClick={() => setSearchModal("saved")}
+                  >
+                    Saved searches
+                  </button>
+                </div>
               </div>
               <ResultsList
                 appliedFilters={appliedFilters}
@@ -327,16 +346,58 @@ export default function CandidateSearch() {
               <div className="h-24" />
             </div>
           </section>
-
-          <RecentSavedSidebar
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            displayedRecent={displayedRecent}
-            displayedSaved={displayedSaved}
-            onApplyStored={handleApplyStored}
-          />
         </div>
       </div>
+      <EditSectionModal
+        open={Boolean(searchModal)}
+        title={modalTitle}
+        description=""
+        onClose={() => setSearchModal(null)}
+        secondaryLabel="Close"
+        showFooter={false}
+      >
+        {modalItems.length ? (
+          <div className="space-y-3">
+            {modalItems.map((item, index) => (
+              <button
+                key={`${item.name}-${index}`}
+                type="button"
+                className="flex w-full items-start gap-3 rounded-xl border border-surface-2 px-4 py-3 text-left hover:border-brand-200"
+                onClick={() => {
+                  handleApplyStored(item);
+                  setSearchModal(null);
+                }}
+              >
+                <span className="mt-0.5 flex h-8 w-8 items-center justify-center text-ink-faint">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="M21 21l-4.35-4.35" />
+                  </svg>
+                </span>
+                <span className="flex flex-col gap-0.5">
+                  <span className="text-sm font-semibold text-ink">{item.name}</span>
+                  <span className="text-xs text-ink-faint">
+                    {new Date(item.createdAt).toLocaleDateString()}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-surface-3 bg-surface-1 px-4 py-6 text-center text-sm text-ink-faint">
+            No searches yet.
+          </div>
+        )}
+      </EditSectionModal>
     </div>
   );
 }

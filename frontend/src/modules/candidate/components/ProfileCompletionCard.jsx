@@ -1,5 +1,6 @@
 ﻿import { useState } from "react";
 import Card from "../../../components/ui/Card";
+import { normalizeMissingDetails } from "../utils/missingDetails";
 
 const iconMap = {
   personal_full_name: (
@@ -85,8 +86,13 @@ export default function ProfileCompletionCard({
   const offset = circumference - (progress / 100) * circumference;
   const isComplete = progress >= 100;
 
-  const visibleItems = expanded ? missingDetails : missingDetails.slice(0, 3);
-  const hasMore = missingDetails.length >= 4;
+  const normalizedMissingDetails = normalizeMissingDetails(missingDetails);
+  const visibleItems = expanded
+    ? normalizedMissingDetails
+    : normalizedMissingDetails.slice(0, 3);
+  const hasMore = normalizedMissingDetails.length >= 4;
+  const renderedMissingCount = missingCount || normalizedMissingDetails.length;
+  const leadPercent = normalizedMissingDetails[0]?.percent ?? 0;
 
   return (
     <Card className="space-y-4">
@@ -135,9 +141,9 @@ export default function ProfileCompletionCard({
       ) : (
         <div className="space-y-3 rounded-xl border border-surface-3 bg-white/70 px-3 py-3">
           <div className="flex items-center justify-between text-xs font-semibold text-ink">
-            <span>Add {missingCount || missingDetails.length} missing details</span>
+            <span>Add {renderedMissingCount} missing details</span>
             <span className="rounded-full bg-brand-50 px-2 py-1 text-[11px] text-brand-700">
-              +{Math.max(1, missingDetails[0]?.percent || 0)}%
+              +{Math.max(1, leadPercent)}%
             </span>
           </div>
           <div className="space-y-2 text-xs text-ink-faint">

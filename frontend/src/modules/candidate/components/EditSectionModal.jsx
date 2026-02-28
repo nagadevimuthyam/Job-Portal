@@ -3,10 +3,12 @@ import Button from "../../../components/ui/Button";
 export default function EditSectionModal({
   open,
   title,
+  description = "Make quick edits and save.",
   onClose,
   onSubmit,
   primaryLabel = "Save",
   secondaryLabel = "Cancel",
+  showFooter = true,
   children,
 }) {
   if (!open) return null;
@@ -22,7 +24,9 @@ export default function EditSectionModal({
         <div className="flex items-start justify-between gap-4">
           <div>
             <h3 className="text-lg font-semibold text-ink">{title}</h3>
-            <p className="text-xs text-ink-faint">Make quick edits and save.</p>
+            {description ? (
+              <p className="text-xs text-ink-faint">{description}</p>
+            ) : null}
           </div>
           <button
             type="button"
@@ -36,16 +40,18 @@ export default function EditSectionModal({
           </button>
         </div>
         <div className="mt-5 space-y-4">{children}</div>
-        <div className="mt-6 flex flex-wrap justify-end gap-3">
-          <Button type="button" variant="ghost" onClick={onClose}>
-            {secondaryLabel}
-          </Button>
-          {onSubmit && (
-            <Button type="button" onClick={onSubmit}>
-              {primaryLabel}
+        {showFooter ? (
+          <div className="mt-6 flex flex-wrap justify-end gap-3">
+            <Button type="button" variant="ghost" onClick={onClose}>
+              {secondaryLabel}
             </Button>
-          )}
-        </div>
+            {onSubmit && (
+              <Button type="button" onClick={onSubmit}>
+                {primaryLabel}
+              </Button>
+            )}
+          </div>
+        ) : null}
       </div>
     </div>
   );

@@ -19,22 +19,26 @@ export default function MissingDetailsPanel({
       ) : (
         <>
           <div className="space-y-3">
-            {topMissing.map((item) => (
-              <button
-                key={item.key}
-                type="button"
-                className="flex w-full items-center justify-between gap-2 rounded-xl bg-white/90 px-3 py-2 text-xs font-semibold text-ink shadow-sm hover:bg-white"
-                onClick={() => onJump(item.key)}
-              >
-                <span className="flex items-center gap-2 text-ink">
-                  <span className="text-ink-faint">{missingIconMap[item.key] || missingIconMap.summary}</span>
-                  {item.label}
-                </span>
-                <span className="rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-semibold text-emerald-700">
-                  +{item.percent}%
-                </span>
-              </button>
-            ))}
+            {topMissing.map((item) => {
+              const label = item.label || item.missing_field_label || "Add missing details";
+              const percent = item.percent ?? item.missing_percent ?? 0;
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  className="flex w-full items-center justify-between gap-2 rounded-xl bg-white/90 px-3 py-2 text-xs font-semibold text-ink shadow-sm hover:bg-white"
+                  onClick={() => onJump(item.key)}
+                >
+                  <span className="flex items-center gap-2 text-ink">
+                    <span className="text-ink-faint">{missingIconMap[item.key] || missingIconMap.summary}</span>
+                    {label}
+                  </span>
+                  <span className="rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-semibold text-emerald-700">
+                    +{percent}%
+                  </span>
+                </button>
+              );
+            })}
           </div>
           <Button className="mt-4 w-full" onClick={ctaLabel.onClick}>
             {ctaLabel.text}

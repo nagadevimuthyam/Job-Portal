@@ -1,5 +1,5 @@
 const noticePeriodOptions = [
-  { label: "Any", value: "" },
+  { label: "Immediate Joiner", value: "" },
   { label: "15 Days or less", value: "15_DAYS_OR_LESS" },
   { label: "1 Month", value: "1_MONTH" },
   { label: "2 Months", value: "2_MONTHS" },

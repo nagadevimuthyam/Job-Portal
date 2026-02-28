@@ -7,6 +7,7 @@ export default function NoticePeriodPills({ value, onChange }) {
       <div className="mt-3 flex flex-nowrap gap-2 overflow-x-auto no-scrollbar">
         {noticePeriodOptions.map((option) => {
           const isActive = value !== null && String(value) === option.value;
+          const label = option.value === "" ? "Immediate Joiner" : option.label;
           return (
             <button
               key={option.label}
@@ -18,8 +19,8 @@ export default function NoticePeriodPills({ value, onChange }) {
               }`}
               onClick={() => onChange(isActive ? null : option.value)}
             >
-              <span>{option.label}</span>
-              <span className="text-xs">{isActive ? "×" : "+"}</span>
+              <span>{label}</span>
+              <span className="text-xs">{isActive ? "x" : "+"}</span>
             </button>
           );
         })}

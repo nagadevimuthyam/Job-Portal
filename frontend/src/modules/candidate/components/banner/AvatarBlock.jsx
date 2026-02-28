@@ -7,43 +7,66 @@ export default function AvatarBlock({
   isUploadingPhoto,
   onFileChange,
   readonly = false,
+  size = 192,
+  innerSize = 144,
+  ringWidth = 16,
+  showBadge = true,
+  fallbackInitial = "",
+  showTrack = true,
 }) {
+  const safeProgress = Number.isFinite(progress) ? Math.max(0, Math.min(100, progress)) : 0;
+  const computedRadius = radius ?? (size - ringWidth) / 2;
+  const computedCircumference = circumference ?? 2 * Math.PI * computedRadius;
+  const computedOffset =
+    offset ?? computedCircumference - (safeProgress / 100) * computedCircumference;
+
   return (
     <div className="flex flex-col items-center gap-3">
-      <div className="relative h-48 w-48">
-        <svg width="192" height="192" className="-rotate-90">
+      <div className="relative" style={{ width: size, height: size }}>
+        <svg width={size} height={size} className="-rotate-90">
+          {showTrack && (
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={computedRadius}
+              strokeWidth={ringWidth}
+              className="text-surface-3"
+              stroke="currentColor"
+              fill="transparent"
+            />
+          )}
           <circle
-            cx="96"
-            cy="96"
-            r={radius}
-            strokeWidth="16"
-            className="text-surface-3"
-            stroke="currentColor"
-            fill="transparent"
-          />
-          <circle
-            cx="96"
-            cy="96"
-            r={radius}
-            strokeWidth="16"
+            cx={size / 2}
+            cy={size / 2}
+            r={computedRadius}
+            strokeWidth={ringWidth}
             strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={offset}
-            className={progress >= 100 ? "text-success" : "text-brand-600"}
+            strokeDasharray={computedCircumference}
+            strokeDashoffset={computedOffset}
+            className={safeProgress >= 100 ? "text-success" : "text-brand-600"}
             stroke="currentColor"
             fill="transparent"
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className={`relative h-36 w-36 overflow-hidden rounded-full border border-surface-3 bg-surface-2 shadow-sm ${readonly ? "" : "group"}`}>
+          <div
+            className={`relative overflow-hidden rounded-full border border-surface-3 bg-surface-2 shadow-sm ${readonly ? "" : "group"}`}
+            style={{ width: innerSize, height: innerSize }}
+          >
             {displayPhoto ? (
               <img src={displayPhoto} alt="Profile" className="h-full w-full object-cover" />
             ) : (
               <div className="flex h-full w-full items-center justify-center text-ink-faint">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M20 21a8 8 0 0 0-16 0" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
+                {fallbackInitial ? (
+                  <span className="text-2xl font-semibold text-ink">
+                    {fallbackInitial}
+                  </span>
+                ) : (
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 21a8 8 0 0 0-16 0" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                )}
               </div>
             )}
             {!readonly && (
@@ -71,13 +94,15 @@ export default function AvatarBlock({
             )}
           </div>
         </div>
-        <span
-          className={`absolute bottom-0 left-1/2 -translate-x-1/2 rounded-full border border-surface-3 bg-white px-3 py-1 text-xs font-semibold shadow-soft ${
-            progress >= 100 ? "text-success" : "text-brand-600"
-          }`}
-        >
-          {progress}%
-        </span>
+        {showBadge && (
+          <span
+            className={`absolute bottom-0 left-1/2 -translate-x-1/2 rounded-full border border-surface-3 bg-white px-3 py-1 text-xs font-semibold shadow-soft ${
+              safeProgress >= 100 ? "text-success" : "text-brand-600"
+            }`}
+          >
+            {safeProgress}%
+          </span>
+        )}
       </div>
     </div>
   );

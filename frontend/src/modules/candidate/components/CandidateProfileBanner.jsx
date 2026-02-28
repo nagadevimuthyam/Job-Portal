@@ -15,7 +15,10 @@ import BasicInfoBlock from "./banner/BasicInfoBlock";
 import MissingDetailsPanel from "./banner/MissingDetailsPanel";
 import BannerMeta from "./banner/BannerMeta";
 import { detailIconMap, sectionMap } from "./banner/bannerConfig";
+import { normalizeMissingDetails } from "../utils/missingDetails";
+import { buildEmploymentHeadline } from "./banner/employmentSummary";
 import { getLabelForValue, WORK_STATUS_OPTIONS, AVAILABILITY_OPTIONS } from "../../../shared/constants/profileOptions";
+import noticePeriodOptions from "../../../shared/constants/noticePeriodOptions";
 
 export default function CandidateProfileBanner({
   onJumpToSection,
@@ -29,7 +32,11 @@ export default function CandidateProfileBanner({
   const profile = sourceData?.profile || {};
   const completionPercent = sourceData?.profile_completion_percent ?? 0;
   const missingDetails = sourceData?.missing_details ?? [];
-  const missingCount = sourceData?.missing_count ?? missingDetails.length;
+  const normalizedMissingDetails = useMemo(
+    () => normalizeMissingDetails(missingDetails),
+    [missingDetails]
+  );
+  const missingCount = sourceData?.missing_count ?? normalizedMissingDetails.length;
   const lastUpdated = sourceData?.last_updated;
   const employments = sourceData?.employments ?? [];
 
@@ -45,7 +52,9 @@ export default function CandidateProfileBanner({
   const offset = circumference - (progress / 100) * circumference;
 
   const displayPhoto = photoPreview || profile.photo_url;
-  const topMissing = useMemo(() => missingDetails.slice(0, 3), [missingDetails]);
+  const topMissing = useMemo(() => normalizedMissingDetails.slice(0, 3), [
+    normalizedMissingDetails,
+  ]);
   const isSearchable = Boolean(profile.is_searchable);
   const canEnableVisibility = completionPercent >= 60;
 
@@ -88,12 +97,22 @@ export default function CandidateProfileBanner({
 
   const employmentTitle = latestEmployment?.title?.trim() || "";
   const employmentCompany = latestEmployment?.company?.trim() || "";
-  const employmentSummary = useMemo(() => {
-    if (employmentTitle && employmentCompany) {
-      return `${employmentTitle} at ${employmentCompany}`;
+  const employmentSummary = useMemo(
+    () => buildEmploymentHeadline(employmentTitle, employmentCompany),
+    [employmentTitle, employmentCompany]
+  );
+
+  const noticePeriodLabel = useMemo(() => {
+    const raw = profile.notice_period_code;
+    if (raw === null || raw === undefined || raw === "" || raw === 0 || raw === "0") {
+      return "Immediate Joiner";
     }
-    return employmentTitle || employmentCompany || "";
-  }, [employmentTitle, employmentCompany]);
+    return (
+      getLabelForValue(raw, noticePeriodOptions) ||
+      getLabelForValue(profile.availability_to_join, AVAILABILITY_OPTIONS) ||
+      "Add notice period"
+    );
+  }, [profile.notice_period_code, profile.availability_to_join]);
 
   const leftRows = useMemo(
     () => [
@@ -102,12 +121,10 @@ export default function CandidateProfileBanner({
           {
         key: "availability",
         icon: detailIconMap.availability,
-        value:
-          getLabelForValue(profile.availability_to_join, AVAILABILITY_OPTIONS) ||
-          "Add availability",
+        value: noticePeriodLabel,
       },
     ],
-    [formattedLocation, profile.email, profile.availability_to_join]
+    [formattedLocation, profile.email, noticePeriodLabel]
   );
 
   const experienceLabel = useMemo(() => {
@@ -252,8 +269,8 @@ export default function CandidateProfileBanner({
                 topMissing={topMissing}
                 onJump={handleJump}
                 ctaLabel={{
-                  text: `Add ${missingCount || missingDetails.length} missing details`,
-                  onClick: () => handleJump(missingDetails[0]?.key || "personal"),
+                  text: `Add ${missingCount || normalizedMissingDetails.length} missing details`,
+                  onClick: () => handleJump(normalizedMissingDetails[0]?.key || "personal"),
                 }}
               />
               <div className="rounded-2xl border border-surface-3 bg-white/70 p-4 shadow-soft">
