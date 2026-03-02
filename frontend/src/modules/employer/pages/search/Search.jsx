@@ -1,15 +1,7 @@
-import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
-import { skipToken } from "@reduxjs/toolkit/query";
 import Input from "../../../../components/ui/Input";
 import SkillMultiSelect from "../../../../components/inputs/SkillMultiSelect/SkillMultiSelect";
 import { formatINR } from "../../../../shared/utils/formatINR";
 import { useSearchCandidatesQuery } from "../../../../features/employer/employerApi";
-import {
-  buildSearchLabel,
-  buildSearchPayload,
-  emptyFilters,
-} from "./utils/searchPayload";
 import SearchFormCard from "./components/SearchFormCard";
 import ExperienceDropdown from "./components/ExperienceDropdown";
 import NoticePeriodPills from "./components/NoticePeriodPills";
@@ -19,131 +11,34 @@ import AdditionalDetails from "./components/AdditionalDetails";
 import ResultsList from "./components/ResultsList";
 import EditSectionModal from "../../../candidate/components/EditSectionModal";
 import StickySearchBar from "./components/StickySearchBar";
+import { handleSalaryInputChange } from "./services/salaryInput";
+import { useCandidateSearchFilters } from "./hooks/useCandidateSearchFilters";
 
 export default function CandidateSearch() {
-  const salaryMinRef = useRef(null);
-  const salaryMaxRef = useRef(null);
+  const {
+    salaryMinRef,
+    salaryMaxRef,
+    safeDraftFilters,
+    handleSearch,
+    handleSaveSearch,
+    handleApplyStored,
+    handleClearFilters,
+    searchModal,
+    modalItems,
+    modalTitle,
+    selectedSkills,
+    setSelectedSkills,
+    setDraftFilters,
+    saveName,
+    setSaveName,
+    setSearchModal,
+    appliedFilters,
+    queryArg,
+  } = useCandidateSearchFilters();
 
-  const [draftFilters, setDraftFilters] = useState(emptyFilters);
-  const [selectedSkills, setSelectedSkills] = useState([]);
-  const [appliedFilters, setAppliedFilters] = useState(null);
-  const [saveName, setSaveName] = useState("");
-  const [recentSearches, setRecentSearches] = useState([]);
-  const [savedSearches, setSavedSearches] = useState([]);
-  const [searchModal, setSearchModal] = useState(null);
-
-  const queryArg = appliedFilters ? appliedFilters : skipToken;
   const { data, isLoading } = useSearchCandidatesQuery(queryArg);
   const results = appliedFilters ? data?.results || [] : [];
   const resultCount = appliedFilters ? data?.count ?? 0 : 0;
-  const safeDraftFilters = {
-    ...draftFilters,
-    gender: Array.isArray(draftFilters.gender) ? draftFilters.gender : [],
-  };
-
-  const handleSearch = (nextFilters = draftFilters, nextSkills = selectedSkills) => {
-    const normalizedFilters =
-      nextFilters?.updated_type?.toLowerCase() === "active_updated"
-        ? { ...nextFilters, updated_type: "active" }
-        : nextFilters;
-    const payload = buildSearchPayload(
-      {
-        ...normalizedFilters,
-        gender: Array.isArray(normalizedFilters.gender) ? normalizedFilters.gender : [],
-      },
-      nextSkills
-    );
-    if (Object.keys(payload).length === 0) {
-      setAppliedFilters(null);
-      return;
-    }
-    setAppliedFilters(payload);
-    const recentEntry = {
-      name: buildSearchLabel(nextFilters, nextSkills),
-      params: normalizedFilters,
-      skills: nextSkills,
-      createdAt: new Date().toISOString(),
-    };
-    setRecentSearches((prev) => [recentEntry, ...prev].slice(0, 5));
-  };
-
-  const handleSaveSearch = () => {
-    if (!saveName.trim()) {
-      toast.error("Enter a name to save this search.");
-      return;
-    }
-    const normalizedFilters =
-      draftFilters?.updated_type?.toLowerCase() === "active_updated"
-        ? { ...draftFilters, updated_type: "active" }
-        : draftFilters;
-    const payload = buildSearchPayload(normalizedFilters, selectedSkills);
-    if (Object.keys(payload).length === 0) {
-      toast.error("Add filters before saving a search.");
-      return;
-    }
-    const entry = {
-      name: saveName.trim(),
-      params: normalizedFilters,
-      skills: selectedSkills,
-      createdAt: new Date().toISOString(),
-    };
-    setSavedSearches((prev) => [entry, ...prev].slice(0, 20));
-    setSaveName("");
-    toast.success("Search saved.");
-  };
-
-  const handleApplyStored = (item) => {
-    const nextParams =
-      item.params?.updated_type?.toLowerCase() === "active_updated"
-        ? { ...item.params, updated_type: "active" }
-        : item.params;
-    setDraftFilters(nextParams);
-    setSelectedSkills(item.skills || []);
-    handleSearch(nextParams, item.skills || []);
-  };
-
-  const handleClearFilters = () => {
-    setDraftFilters(emptyFilters);
-    setSelectedSkills([]);
-    setAppliedFilters(null);
-  };
-
-  const recentFallback = [
-    { name: "java developer, Female", createdAt: "2026-02-17" },
-    { name: "frontend developer", createdAt: "2026-02-16" },
-    { name: "Business Development Executive", createdAt: "2026-02-15" },
-  ];
-  const savedFallback = [
-    { name: "Bengaluru · React", createdAt: "2026-02-10" },
-    { name: "Backend · Python", createdAt: "2026-02-08" },
-  ];
-  const displayedRecent = recentSearches.length ? recentSearches : recentFallback;
-  const displayedSaved = savedSearches.length ? savedSearches : savedFallback;
-  const modalItems = searchModal === "recent" ? displayedRecent : displayedSaved;
-  const modalTitle = searchModal === "recent" ? "Recent searches" : "Saved searches";
-
-  useEffect(() => {
-    const handleClickAway = (event) => {
-      const openDetails = document.querySelectorAll("details.dropdown-popover[open]");
-      openDetails.forEach((detail) => {
-        if (!detail.contains(event.target)) {
-          detail.removeAttribute("open");
-        }
-      });
-    };
-    const handleEscape = (event) => {
-      if (event.key !== "Escape") return;
-      const openDetails = document.querySelectorAll("details.dropdown-popover[open]");
-      openDetails.forEach((detail) => detail.removeAttribute("open"));
-    };
-    document.addEventListener("mousedown", handleClickAway);
-    document.addEventListener("keydown", handleEscape);
-    return () => {
-      document.removeEventListener("mousedown", handleClickAway);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, []);
-
 
   return (
     <div className="h-[calc(100vh-64px)] -mx-6 -my-8 px-0 py-6 flex flex-col overflow-hidden">
@@ -214,24 +109,15 @@ export default function CandidateSearch() {
                           placeholder="Lacs"
                           ref={salaryMinRef}
                           value={formatINR(safeDraftFilters.salary_min)}
-                          onChange={(event) => {
-                            const input = event.target;
-                            const prevValue = input.value;
-                            const prevPos = input.selectionStart ?? prevValue.length;
-                            const prevCommas = (prevValue.match(/,/g) || []).length;
-                            const rawDigits = prevValue.replace(/[^\d]/g, "");
-                            const nextRaw = rawDigits.slice(0, 9);
-                            const nextDisplay = formatINR(nextRaw);
-                            const nextCommas = (nextDisplay.match(/,/g) || []).length;
-                            setDraftFilters({ ...safeDraftFilters, salary_min: nextRaw });
-                            requestAnimationFrame(() => {
-                              const el = salaryMinRef.current;
-                              if (!el) return;
-                              const delta = nextCommas - prevCommas;
-                              const nextPos = Math.max(0, prevPos + delta);
-                              el.setSelectionRange(nextPos, nextPos);
-                            });
-                          }}
+                          onChange={(event) =>
+                            handleSalaryInputChange({
+                              event,
+                              field: "salary_min",
+                              ref: salaryMinRef,
+                              safeFilters: safeDraftFilters,
+                              setFilters: setDraftFilters,
+                            })
+                          }
                         />
                       </div>
                     </div>
@@ -246,24 +132,15 @@ export default function CandidateSearch() {
                           placeholder="Lacs"
                           ref={salaryMaxRef}
                           value={formatINR(safeDraftFilters.salary_max)}
-                          onChange={(event) => {
-                            const input = event.target;
-                            const prevValue = input.value;
-                            const prevPos = input.selectionStart ?? prevValue.length;
-                            const prevCommas = (prevValue.match(/,/g) || []).length;
-                            const rawDigits = prevValue.replace(/[^\d]/g, "");
-                            const nextRaw = rawDigits.slice(0, 9);
-                            const nextDisplay = formatINR(nextRaw);
-                            const nextCommas = (nextDisplay.match(/,/g) || []).length;
-                            setDraftFilters({ ...safeDraftFilters, salary_max: nextRaw });
-                            requestAnimationFrame(() => {
-                              const el = salaryMaxRef.current;
-                              if (!el) return;
-                              const delta = nextCommas - prevCommas;
-                              const nextPos = Math.max(0, prevPos + delta);
-                              el.setSelectionRange(nextPos, nextPos);
-                            });
-                          }}
+                          onChange={(event) =>
+                            handleSalaryInputChange({
+                              event,
+                              field: "salary_max",
+                              ref: salaryMaxRef,
+                              safeFilters: safeDraftFilters,
+                              setFilters: setDraftFilters,
+                            })
+                          }
                         />
                       </div>
                     </div>

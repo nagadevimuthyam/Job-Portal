@@ -4,6 +4,7 @@ import { useSelector } from "react-redux";
 
 import MasterLayout from "../layouts/MasterLayout";
 import EmployerLayout from "../layouts/EmployerLayout";
+import { selectAuthUser } from "@/shared/selectors/authSelectors";
 
 const MasterLogin = lazy(() => import("../modules/master/pages/Login"));
 const MasterDashboard = lazy(() => import("../modules/master/pages/Dashboard"));
@@ -27,7 +28,7 @@ const CandidateRegister = lazy(() => import("../modules/candidate/pages/Register
 const CandidateDashboard = lazy(() => import("../modules/candidate/pages/Dashboard"));
 
 function RequireRole({ roles, children }) {
-  const user = useSelector((state) => state.auth.user);
+  const user = useSelector(selectAuthUser);
   if (!user || !roles.includes(user.role)) {
     return <Navigate to="/" replace />;
   }

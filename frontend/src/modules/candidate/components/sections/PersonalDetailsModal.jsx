@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import Button from "../../../../components/ui/Button";
-import Input from "../../../../components/ui/Input";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 import FieldError from "./FieldError";
-import { formatINR } from "../../../../shared/utils/formatINR";
+import { formatINR } from "@/shared/utils/formatINR";
 import {
   GENDER_OPTIONS,
   MARITAL_STATUS_OPTIONS,
   mapLegacyValue,
-} from "../../../../shared/constants/profileOptions";
+} from "@/shared/constants/profileOptions";
 
 export default function PersonalDetailsModal({
   isOpen,

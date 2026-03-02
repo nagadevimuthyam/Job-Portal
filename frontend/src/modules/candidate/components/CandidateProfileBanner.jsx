@@ -16,9 +16,14 @@ import MissingDetailsPanel from "./banner/MissingDetailsPanel";
 import BannerMeta from "./banner/BannerMeta";
 import { detailIconMap, sectionMap } from "./banner/bannerConfig";
 import { normalizeMissingDetails } from "../utils/missingDetails";
-import { buildEmploymentHeadline } from "./banner/employmentSummary";
-import { getLabelForValue, WORK_STATUS_OPTIONS, AVAILABILITY_OPTIONS } from "../../../shared/constants/profileOptions";
-import noticePeriodOptions from "../../../shared/constants/noticePeriodOptions";
+import {
+  formatCandidateLocationForBanner,
+  formatCandidateExperienceLabel,
+  getNoticePeriodLabel,
+  formatCandidateUpdatedAt,
+  getLatestEmployment,
+  buildCandidateEmploymentHeadline,
+} from "../../../shared/selectors/candidateSelectors";
 
 export default function CandidateProfileBanner({
   onJumpToSection,
@@ -58,61 +63,22 @@ export default function CandidateProfileBanner({
   const isSearchable = Boolean(profile.is_searchable);
   const canEnableVisibility = completionPercent >= 60;
 
-  const formattedLocation = useMemo(() => {
-    const city = profile.current_city?.trim() || profile.location?.trim();
-    const state = profile.current_state?.trim();
-    const rawCountry = profile.country?.trim() || profile.location_country?.trim();
-    const country = rawCountry?.toLowerCase() === "india" ? "INDIA" : rawCountry;
-    const parts = [city, state, country].filter(Boolean);
-    if (parts.length) return parts.join(", ");
-    return "Add location";
-  }, [profile.current_city, profile.current_state, profile.country, profile.location, profile.location_country]);
+  const formattedLocation = useMemo(
+    () => formatCandidateLocationForBanner(profile),
+    [profile.current_city, profile.current_state, profile.country, profile.location, profile.location_country]
+  );
 
-  const formattedUpdated = useMemo(() => {
-    if (!lastUpdated) return "-";
-    const dateObj = new Date(lastUpdated);
-    if (Number.isNaN(dateObj.getTime())) return "-";
-    return new Intl.DateTimeFormat("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    })
-      .format(dateObj)
-      .replace(/ /g, "")
-      .replace(/(\d{2})([A-Za-z]{3}) (\d{4})/, "$1$2, $3")
-      .replace(/(\d{2})([A-Za-z]{3})(\d{4})/, "$1$2, $3");
-  }, [lastUpdated]);
+  const formattedUpdated = useMemo(() => formatCandidateUpdatedAt(lastUpdated), [lastUpdated]);
 
-  const latestEmployment = useMemo(() => {
-    if (!employments.length) return null;
-    const current = employments.find((item) => item.is_current);
-    if (current) return current;
-    const sorted = [...employments].sort((a, b) => {
-      const aDate = new Date(a.start_date || 0).getTime();
-      const bDate = new Date(b.start_date || 0).getTime();
-      return bDate - aDate;
-    });
-    return sorted[0];
-  }, [employments]);
-
+  const latestEmployment = useMemo(() => getLatestEmployment(employments), [employments]);
   const employmentTitle = latestEmployment?.title?.trim() || "";
   const employmentCompany = latestEmployment?.company?.trim() || "";
   const employmentSummary = useMemo(
-    () => buildEmploymentHeadline(employmentTitle, employmentCompany),
+    () => buildCandidateEmploymentHeadline(employmentTitle, employmentCompany),
     [employmentTitle, employmentCompany]
   );
 
-  const noticePeriodLabel = useMemo(() => {
-    const raw = profile.notice_period_code;
-    if (raw === null || raw === undefined || raw === "" || raw === 0 || raw === "0") {
-      return "Immediate Joiner";
-    }
-    return (
-      getLabelForValue(raw, noticePeriodOptions) ||
-      getLabelForValue(profile.availability_to_join, AVAILABILITY_OPTIONS) ||
-      "Add notice period"
-    );
-  }, [profile.notice_period_code, profile.availability_to_join]);
+  const noticePeriodLabel = useMemo(() => getNoticePeriodLabel(profile), [profile]);
 
   const leftRows = useMemo(
     () => [
@@ -127,12 +93,10 @@ export default function CandidateProfileBanner({
     [formattedLocation, profile.email, noticePeriodLabel]
   );
 
-  const experienceLabel = useMemo(() => {
-    const years = Number(profile.total_experience_years || 0);
-    if (profile.work_status === "FRESHER" && years === 0) return "Fresher";
-    if (years === 1) return "1 Year";
-    return `${years} Years`;
-  }, [profile.total_experience_years, profile.work_status]);
+  const experienceLabel = useMemo(
+    () => formatCandidateExperienceLabel(profile),
+    [profile.total_experience_years, profile.work_status]
+  );
 
   const rightRows = useMemo(
     () => [

@@ -1,5 +1,9 @@
-﻿import EditButton from "../shared/EditButton";
+import EditButton from "../shared/EditButton";
 import SectionCard from "../shared/SectionCard";
+import {
+  formatCandidateLocationForCard,
+  formatCandidateExperienceLabel,
+} from "../../../../shared/selectors/candidateSelectors";
 
 const formatDate = (value) => {
   if (!value) return "-";
@@ -10,17 +14,6 @@ const formatDate = (value) => {
     month: "short",
     year: "numeric",
   });
-};
-
-const formatLocation = ({ current_city, current_state, country, location }) => {
-  const parts = [current_city, current_state, country].filter(Boolean);
-  if (parts.length) {
-    return parts
-      .map((part, index) => (index === 2 ? String(part).toUpperCase() : part))
-      .join(", ");
-  }
-  if (location) return location;
-  return country ? String(country).toUpperCase() : "-";
 };
 
 const formatValue = (value) => (value ? value : "-");
@@ -40,7 +33,8 @@ const formatINR = (value) => {
 };
 
 export default function PersonalDetailsCard({ data, onEdit, isLocked }) {
-  const locationText = formatLocation(data || {});
+  const locationText = formatCandidateLocationForCard(data || {});
+  const experienceText = formatCandidateExperienceLabel(data || {});
   return (
     <SectionCard
       title="Personal Details"
@@ -66,14 +60,7 @@ export default function PersonalDetailsCard({ data, onEdit, isLocked }) {
         </div>
         <div>
           <p className="text-xs text-ink-faint">Experience</p>
-          <p className="font-semibold text-ink">
-            {(() => {
-              const years = Number(data?.total_experience_years || 0);
-              if (data?.work_status === "FRESHER" && years === 0) return "Fresher";
-              if (years === 1) return "1 Year";
-              return `${years} Years`;
-            })()}
-          </p>
+          <p className="font-semibold text-ink">{experienceText || "Add experience"}</p>
         </div>
         <div>
           <p className="text-xs text-ink-faint">Availability to join</p>
