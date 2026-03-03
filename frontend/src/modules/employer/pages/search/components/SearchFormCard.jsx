@@ -4,6 +4,7 @@ import Input from "../../../../../components/ui/Input";
 
 export default function SearchFormCard({
   saveName,
+  isSaving = false,
   onSaveNameChange,
   onSaveSearch,
   children,
@@ -30,8 +31,8 @@ export default function SearchFormCard({
             />
           </div>
           <div className="flex gap-3">
-            <Button type="button" variant="outline" onClick={onSaveSearch}>
-              Save Search
+            <Button type="button" variant="outline" onClick={onSaveSearch} disabled={isSaving}>
+              {isSaving ? "Saving..." : "Save Search"}
             </Button>
           </div>
         </div>
