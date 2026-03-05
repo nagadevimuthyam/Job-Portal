@@ -4,6 +4,28 @@ from django.utils import timezone
 from ..models import CandidateProfile
 
 
+def _clean_preferred_locations(value):
+    if value is None:
+        return None, None
+    if not isinstance(value, list):
+        return None, "Preferred locations must be a list."
+
+    cleaned = []
+    seen = set()
+    for item in value:
+        if not isinstance(item, str):
+            return None, "Preferred locations must contain only text values."
+        normalized = " ".join(item.split()).strip()
+        if not normalized:
+            continue
+        key = normalized.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        cleaned.append(normalized)
+    return cleaned, None
+
+
 class CandidateProfileSerializer(serializers.ModelSerializer):
     resume_url = serializers.SerializerMethodField()
     resume_filename = serializers.SerializerMethodField()
@@ -25,7 +47,7 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
             "current_state",
             "country",
             "nationality",
-            "marital_status",
+            "preferred_locations",
             "work_authorization_country",
             "summary",
             "work_status",
@@ -81,7 +103,7 @@ class CandidateProfileUpdateSerializer(serializers.ModelSerializer):
             "current_state",
             "country",
             "nationality",
-            "marital_status",
+            "preferred_locations",
             "work_authorization_country",
             "summary",
             "work_status",
@@ -126,6 +148,15 @@ class CandidateProfileUpdateSerializer(serializers.ModelSerializer):
             errors["availability_to_join"] = "Invalid availability option."
         if data.get("notice_period_code") not in notice_period_allowed:
             errors["notice_period_code"] = "Invalid notice period."
+
+        cleaned_locations, locations_error = _clean_preferred_locations(
+            data.get("preferred_locations")
+        )
+        if locations_error:
+            errors["preferred_locations"] = locations_error
+        elif cleaned_locations is not None:
+            attrs["preferred_locations"] = cleaned_locations
+
         if errors:
             raise serializers.ValidationError(errors)
         return attrs
@@ -144,7 +175,7 @@ class CandidatePersonalDetailsSerializer(serializers.ModelSerializer):
             "current_state",
             "country",
             "nationality",
-            "marital_status",
+            "preferred_locations",
             "work_authorization_country",
             "availability_to_join",
             "location",
@@ -160,28 +191,25 @@ class CandidatePersonalDetailsSerializer(serializers.ModelSerializer):
         instance = getattr(self, "instance", None)
         if instance:
             data.setdefault("gender", instance.gender)
-            data.setdefault("marital_status", instance.marital_status)
             data.setdefault("dob", instance.dob)
+            data.setdefault("preferred_locations", instance.preferred_locations)
 
         errors = {}
         currency_allowed = {"INR", "USD", "", None}
         gender_allowed = {"MALE", "FEMALE", "OTHER", "PREFER_NOT_TO_SAY", "", None}
-        marital_allowed = {
-            "SINGLE",
-            "MARRIED",
-            "DIVORCED",
-            "WIDOWED",
-            "PREFER_NOT_TO_SAY",
-            "",
-            None,
-        }
 
         if data.get("gender") not in gender_allowed:
             errors["gender"] = "Invalid gender."
-        if data.get("marital_status") not in marital_allowed:
-            errors["marital_status"] = "Invalid marital status."
         if data.get("salary_currency") not in currency_allowed:
             errors["salary_currency"] = "Invalid salary currency."
+
+        cleaned_locations, locations_error = _clean_preferred_locations(
+            data.get("preferred_locations")
+        )
+        if locations_error:
+            errors["preferred_locations"] = locations_error
+        elif cleaned_locations is not None:
+            attrs["preferred_locations"] = cleaned_locations
 
         dob = data.get("dob")
         if dob:

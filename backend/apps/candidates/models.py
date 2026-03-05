@@ -26,7 +26,7 @@ class CandidateProfile(models.Model):
     current_state = models.CharField(max_length=120, blank=True)
     country = models.CharField(max_length=120, blank=True)
     nationality = models.CharField(max_length=120, blank=True)
-    marital_status = models.CharField(max_length=20, blank=True)
+    preferred_locations = models.JSONField(default=list, blank=True)
     work_authorization_country = models.CharField(max_length=120, blank=True)
     total_experience_years = models.PositiveSmallIntegerField(default=0)
     total_experience_months = models.PositiveSmallIntegerField(

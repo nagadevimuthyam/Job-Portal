@@ -31,6 +31,8 @@ class CandidateSearchSerializer(serializers.ModelSerializer):
     current_start_date = serializers.SerializerMethodField()
     current_end_date = serializers.SerializerMethodField()
     current_is_current = serializers.SerializerMethodField()
+    employments = CandidateEmploymentSerializer(many=True, read_only=True)
+    educations = CandidateEducationSerializer(many=True, read_only=True)
     profile_completion_percent = serializers.IntegerField(read_only=True)
 
     class Meta:
@@ -43,7 +45,10 @@ class CandidateSearchSerializer(serializers.ModelSerializer):
             "location",
             "current_city",
             "country",
+            "preferred_locations",
             "skills",
+            "employments",
+            "educations",
             "summary",
             "profile_image_url",
             "resume_url",
@@ -52,16 +57,16 @@ class CandidateSearchSerializer(serializers.ModelSerializer):
             "current_start_date",
             "current_end_date",
             "current_is_current",
-        "last_active_at",
-        "last_updated",
-        "total_experience",
-        "total_experience_years",
-        "total_experience_months",
-        "notice_period_code",
-        "expected_salary",
-        "salary_currency",
-        "profile_completion_percent",
-    )
+            "last_active_at",
+            "last_updated",
+            "total_experience",
+            "total_experience_years",
+            "total_experience_months",
+            "notice_period_code",
+            "expected_salary",
+            "salary_currency",
+            "profile_completion_percent",
+        )
 
     def get_skills(self, obj):
         return [skill.name for skill in obj.skills.all()]

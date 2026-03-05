@@ -44,6 +44,19 @@ def _build_missing_entry(key: str) -> dict:
     }
 
 
+def _has_availability(profile) -> bool:
+    """
+    Keep completion logic aligned with UI notice-period display:
+    null/blank notice_period_code is treated as Immediate Joiner.
+    """
+    notice_code = profile.notice_period_code
+    if notice_code in (None, "", 0, "0"):
+        return True
+    if isinstance(notice_code, str) and notice_code.strip():
+        return True
+    return bool(profile.availability_to_join)
+
+
 def calculate_profile_completion(profile) -> Tuple[int, List[dict]]:
     total = 0
     missing = []
@@ -73,7 +86,7 @@ def calculate_profile_completion(profile) -> Tuple[int, List[dict]]:
     else:
         missing.append(_build_missing_entry("work_status"))
 
-    if profile.availability_to_join:
+    if _has_availability(profile):
         total += WEIGHTS["availability"]
     else:
         missing.append(_build_missing_entry("availability"))
