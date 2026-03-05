@@ -42,6 +42,16 @@ export const candidateProfileApi = baseApi.injectEndpoints({
       query: (q) => `/api/skills/suggest/?q=${encodeURIComponent(q ?? "")}`,
       keepUnusedDataFor: 300,
     }),
+    getLocationSuggestions: builder.query({
+      query: ({ q, state, limit = 10 }) => {
+        const params = new URLSearchParams();
+        params.set("q", q ?? "");
+        if (state) params.set("state", state);
+        if (limit) params.set("limit", String(limit));
+        return `/api/locations/suggest/?${params.toString()}`;
+      },
+      keepUnusedDataFor: 300,
+    }),
     createSkill: builder.mutation({
       query: (payload) => ({
         url: "/api/candidate/profile/skills/",
@@ -168,6 +178,7 @@ export const {
   useGetPersonalDetailsQuery,
   useUpdatePersonalDetailsMutation,
   useGetSkillSuggestionsQuery,
+  useGetLocationSuggestionsQuery,
   useCreateSkillMutation,
   useDeleteSkillMutation,
   useCreateEmploymentMutation,

@@ -7,8 +7,8 @@ import {
   GENDER_OPTIONS,
   MARITAL_STATUS_OPTIONS,
   getLabelForValue,
-  AVAILABILITY_OPTIONS,
 } from "../../../../shared/constants/profileOptions";
+import { getNoticePeriodLabel } from "../../../../shared/selectors/candidateSelectors";
 import {
   useGetPersonalDetailsQuery,
   useUpdatePersonalDetailsMutation,
@@ -40,7 +40,7 @@ export default function PersonalDetailsSection({ isEditing, isLocked, onEdit, on
       ...data,
       gender_label: getLabelForValue(data.gender, GENDER_OPTIONS),
       marital_status_label: getLabelForValue(data.marital_status, MARITAL_STATUS_OPTIONS),
-      availability_label: getLabelForValue(data.availability_to_join, AVAILABILITY_OPTIONS),
+      availability_label: getNoticePeriodLabel(data),
     };
   }, [data]);
 

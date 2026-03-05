@@ -1,4 +1,8 @@
 import SectionState from "./SectionState";
+import {
+  getEducationLabel,
+  getCourseTypeLabel,
+} from "../../../../shared/constants/profileOptions";
 
 export default function EducationSectionList({ items }) {
   if (items.length === 0) {
@@ -9,9 +13,13 @@ export default function EducationSectionList({ items }) {
     <div className="space-y-3">
       {items.map((edu, index) => (
         <div key={edu.id || edu._key || index} className="rounded-xl border border-surface-3 px-4 py-3">
-          <p className="text-sm font-semibold text-ink">{edu.degree}</p>
+          <p className="text-sm font-semibold text-ink">{getEducationLabel(edu.degree) || edu.degree}</p>
           <p className="text-xs text-ink-faint">{edu.institution}</p>
-          {edu.course_type && <p className="text-xs text-ink-faint">{edu.course_type}</p>}
+          {edu.course_type && (
+            <p className="text-xs text-ink-faint">
+              {getCourseTypeLabel(edu.course_type) || edu.course_type}
+            </p>
+          )}
           <p className="text-xs text-ink-faint">
             {edu.start_year} - {edu.end_year}
           </p>

@@ -17,6 +17,12 @@ const formatDate = (value) => {
 };
 
 const formatValue = (value) => (value ? value : "-");
+const formatPreferredLocations = (value) => {
+  if (Array.isArray(value) && value.length > 0) {
+    return value.join(", ");
+  }
+  return "-";
+};
 const currencySymbol = (code) => {
   if (code === "USD") return "$";
   return "₹";
@@ -75,9 +81,9 @@ export default function PersonalDetailsCard({ data, onEdit, isLocked }) {
           </p>
         </div>
         <div>
-          <p className="text-xs text-ink-faint">Marital Status</p>
+          <p className="text-xs text-ink-faint">Preferred Locations</p>
           <p className="font-semibold text-ink">
-            {formatValue(data?.marital_status_label)}
+            {formatPreferredLocations(data?.preferred_locations)}
           </p>
         </div>
       </div>

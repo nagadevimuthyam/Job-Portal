@@ -3,6 +3,7 @@ import Skeleton from "../../../../../components/ui/Skeleton";
 import Button from "../../../../../components/ui/Button";
 import CandidateMetaRow from "../../../../../components/CandidateMetaRow";
 import { formatRelativeDays } from "../utils/formatters";
+import { getEducationLabel } from "../../../../../shared/constants/profileOptions";
 
 const NOTICE_PERIOD_LABELS = {
   "15_DAYS_OR_LESS": "15 Days",
@@ -120,6 +121,33 @@ const formatMonthYear = (value) => {
   return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
 };
 
+const toText = (value) => (typeof value === "string" ? value.trim() : "");
+
+const formatEmploymentDuration = (startDate, endDate, isCurrent) => {
+  const startLabel = formatMonthYear(startDate);
+  const endLabel = formatMonthYear(endDate);
+  if (isCurrent && startLabel) return `${startLabel} to Present`;
+  if (startLabel && endLabel) return `${startLabel} to ${endLabel}`;
+  return startLabel || endLabel || "";
+};
+
+const formatEmploymentLine = ({ title, company, startDate, endDate, isCurrent } = {}) => {
+  const safeTitle = toText(title);
+  const safeCompany = toText(company);
+  const duration = formatEmploymentDuration(startDate, endDate, isCurrent);
+  if (!safeTitle && !safeCompany && !duration) return "";
+  return [safeTitle || "--", safeCompany || "--", duration || "--"].join(" | ");
+};
+
+const formatEducationLine = (education) => {
+  if (!education || typeof education !== "object") return "";
+  const degree = toText(getEducationLabel(education.degree) || education.degree);
+  const institution = toText(education.institution);
+  const year = education.end_year || education.start_year;
+  const values = [degree, institution, year].filter(Boolean);
+  return values.join(" | ");
+};
+
 export default function ResultsList({
   appliedFilters,
   isLoading,
@@ -164,19 +192,56 @@ export default function ResultsList({
         const activitySource =
           candidate.last_active_at || candidate.last_updated || candidate.updated_at;
         const activityLabel = formatRelativeDays(activitySource);
-        const isCurrent = Boolean(candidate.current_is_current);
-        const startLabel = formatMonthYear(candidate.current_start_date);
-        const endLabel = formatMonthYear(candidate.current_end_date);
-        const currentLine = isCurrent && startLabel
-          ? `${startLabel} to Present`
-          : startLabel && endLabel
-            ? `${startLabel} to ${endLabel}`
-            : "";
-        const currentTitle = (candidate.current_title || "").trim();
-        const currentCompany = (candidate.current_company || "").trim();
-        const currentEmploymentLine = currentLine && (currentTitle || currentCompany)
-          ? `Current: ${currentTitle || "--"} | ${currentCompany || "--"} | ${currentLine}`
+        const employments = Array.isArray(candidate.employments) ? candidate.employments : [];
+        const hasCurrentEmployment = employments.some((item) => item?.is_current);
+        const currentEmployment = hasCurrentEmployment
+          ? employments.find((item) => item?.is_current) || null
+          : employments[0] || null;
+        const pastEmployment = hasCurrentEmployment
+          ? employments.find((item) => !item?.is_current) || null
+          : employments.length > 1
+            ? employments[1]
+            : null;
+        const currentSectionValue = formatEmploymentLine({
+          title: candidate.current_title || currentEmployment?.title,
+          company: candidate.current_company || currentEmployment?.company,
+          startDate: candidate.current_start_date || currentEmployment?.start_date,
+          endDate: candidate.current_end_date || currentEmployment?.end_date,
+          isCurrent: candidate.current_is_current ?? currentEmployment?.is_current,
+        });
+        const pastSectionValue = pastEmployment
+          ? formatEmploymentLine({
+            title: pastEmployment.title,
+            company: pastEmployment.company,
+            startDate: pastEmployment.start_date,
+            endDate: pastEmployment.end_date,
+            isCurrent: pastEmployment.is_current,
+          })
           : "";
+        const skillList = Array.isArray(candidate.skills)
+          ? candidate.skills.filter((skill) => typeof skill === "string" && skill.trim())
+          : [];
+        const skillLimit = 6;
+        const visibleSkills = skillList.slice(0, skillLimit);
+        const hiddenSkillCount = Math.max(skillList.length - visibleSkills.length, 0);
+        const skillsSectionValue = visibleSkills.length
+          ? `${visibleSkills.join(", ")}${hiddenSkillCount ? ` +${hiddenSkillCount} more` : ""}`
+          : "";
+        const preferredLocations = Array.isArray(candidate.preferred_locations)
+          ? candidate.preferred_locations
+            .filter((location) => typeof location === "string" && location.trim())
+            .map((location) => location.trim())
+          : [];
+        const preferredLocationValue = preferredLocations.join(", ");
+        const educationList = Array.isArray(candidate.educations) ? candidate.educations : [];
+        const educationSectionValue = formatEducationLine(educationList[0]);
+        const sectionRows = [
+          { key: "current", label: "Current:", value: currentSectionValue },
+          { key: "past", label: "Past:", value: pastSectionValue },
+          { key: "skills", label: "Skills:", value: skillsSectionValue },
+          { key: "prefLocation", label: "Pref. location:", value: preferredLocationValue },
+          { key: "education", label: "Education:", value: educationSectionValue },
+        ].filter((item) => item.value);
 
         return (
           <Card key={candidate.id} className="space-y-4 p-5">
@@ -198,9 +263,6 @@ export default function ResultsList({
                   <p className="text-sm text-ink-faint">
                     {titleLine || "--"}
                   </p>
-                  {currentEmploymentLine ? (
-                    <p className="text-xs text-ink-faint">{currentEmploymentLine}</p>
-                  ) : null}
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -243,16 +305,16 @@ export default function ResultsList({
               ]}
             />
 
-            <div className="flex flex-wrap gap-2">
-              {(candidate.skills || []).slice(0, 6).map((skill) => (
-                <span
-                  key={skill}
-                  className="rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700"
-                >
-                  {skill}
-                </span>
-              ))}
-            </div>
+            {sectionRows.length ? (
+              <div className="space-y-1.5">
+                {sectionRows.map((section) => (
+                  <p key={section.key} className="text-sm leading-6 text-ink-soft">
+                    <span className="font-semibold text-ink">{section.label}</span>{" "}
+                    <span className="break-words">{section.value}</span>
+                  </p>
+                ))}
+              </div>
+            ) : null}
 
             <div className="flex flex-wrap gap-2">
               <Button

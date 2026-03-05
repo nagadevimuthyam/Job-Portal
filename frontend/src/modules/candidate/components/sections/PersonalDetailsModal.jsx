@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import LocationMultiSelect from "@/components/inputs/LocationMultiSelect/LocationMultiSelect";
 import FieldError from "./FieldError";
 import { formatINR } from "@/shared/utils/formatINR";
 import {
   GENDER_OPTIONS,
-  MARITAL_STATUS_OPTIONS,
   mapLegacyValue,
 } from "@/shared/constants/profileOptions";
 
@@ -22,7 +22,7 @@ export default function PersonalDetailsModal({
     gender: "",
     dob: "",
     nationality: "",
-    marital_status: "",
+    preferred_locations: [],
     work_authorization_country: "",
     expected_salary: "",
   });
@@ -34,10 +34,14 @@ export default function PersonalDetailsModal({
         gender: mapLegacyValue(initialValues?.gender, GENDER_OPTIONS),
         dob: initialValues?.dob || "",
         nationality: initialValues?.nationality || "",
-        marital_status: mapLegacyValue(
-          initialValues?.marital_status,
-          MARITAL_STATUS_OPTIONS
-        ),
+        preferred_locations: Array.isArray(initialValues?.preferred_locations)
+          ? initialValues.preferred_locations.filter((item) => typeof item === "string")
+          : typeof initialValues?.preferred_locations === "string"
+            ? initialValues.preferred_locations
+                .split(",")
+                .map((item) => item.trim())
+                .filter(Boolean)
+            : [],
         work_authorization_country: initialValues?.work_authorization_country || "",
         expected_salary:
           initialValues?.expected_salary === null || initialValues?.expected_salary === undefined
@@ -54,7 +58,7 @@ export default function PersonalDetailsModal({
       gender: form.gender,
       dob: form.dob || null,
       nationality: form.nationality,
-      marital_status: form.marital_status,
+      preferred_locations: form.preferred_locations,
       work_authorization_country: form.work_authorization_country,
       expected_salary: form.expected_salary === "" ? null : Number(form.expected_salary),
       salary_currency: "INR",
@@ -124,26 +128,14 @@ export default function PersonalDetailsModal({
             </div>
 
             <div>
-              <label className="block">
-                <span className="text-sm font-semibold text-ink-soft">Marital Status</span>
-                <select
-                  className={`mt-1 w-full rounded-xl border bg-surface-inverse px-3 py-2.5 text-sm text-ink shadow-sm focus:outline-none focus:ring-2 ${
-                    errors?.marital_status
-                      ? "border-danger focus:border-danger focus:ring-danger/20"
-                      : "border-surface-3 focus:border-brand-300 focus:ring-brand-200"
-                  }`}
-                  value={form.marital_status}
-                  onChange={(event) => setForm({ ...form, marital_status: event.target.value })}
-                >
-                  <option value="">Select marital status</option>
-                  {MARITAL_STATUS_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <FieldError message={errors?.marital_status} />
+              <LocationMultiSelect
+                value={form.preferred_locations}
+                onChange={(next) => setForm({ ...form, preferred_locations: next })}
+                error={errors?.preferred_locations}
+                stateFilter={initialValues?.current_state || ""}
+                limit={10}
+              />
+              <FieldError message={errors?.preferred_locations} />
             </div>
 
             <div>

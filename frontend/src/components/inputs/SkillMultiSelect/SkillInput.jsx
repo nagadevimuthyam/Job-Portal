@@ -1,6 +1,7 @@
 import Input from "../../ui/Input";
 
 export default function SkillInput({
+  label = "Add skill",
   value,
   onChange,
   onKeyDown,
@@ -11,7 +12,7 @@ export default function SkillInput({
 }) {
   return (
     <Input
-      label="Add skill"
+      label={label}
       value={value}
       onChange={(event) => onChange(event.target.value)}
       onKeyDown={onKeyDown}

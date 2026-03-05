@@ -13,6 +13,10 @@ export default function SkillMultiSelect({
   error,
   minItems = 1,
   useSuggestions = useSkillSuggestions,
+  minQueryLength = 1,
+  debounceMs = 200,
+  inputLabel = "Add skill",
+  suggestionContext = null,
 }) {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -20,10 +24,14 @@ export default function SkillMultiSelect({
   const anchorRef = useRef(null);
   const [anchorRect, setAnchorRect] = useState(null);
   const rawQuery = query.trim();
-  const debouncedQuery = useDebouncedValue(rawQuery, 200);
-  const suggestionsEnabled = isOpen && debouncedQuery.length >= 1;
+  const debouncedQuery = useDebouncedValue(rawQuery, debounceMs);
+  const suggestionsEnabled = isOpen && debouncedQuery.length >= minQueryLength;
 
-  const { suggestions, isLoading } = useSuggestions(debouncedQuery, suggestionsEnabled);
+  const { suggestions, isLoading } = useSuggestions(
+    debouncedQuery,
+    suggestionsEnabled,
+    suggestionContext
+  );
 
   const normalizedSelected = useMemo(
     () => new Set(value.map((item) => normalizeSkill(item.name))),
@@ -36,6 +44,7 @@ export default function SkillMultiSelect({
 
   const addLabel = formatSkill(rawQuery) || rawQuery;
   const canAddCustom =
+    rawQuery.length >= minQueryLength &&
     addLabel.length > 0 &&
     !normalizedSelected.has(normalizeSkill(addLabel)) &&
     !cleanedSuggestions.some(
@@ -144,6 +153,7 @@ export default function SkillMultiSelect({
       </div>
       <div className="relative z-30" ref={anchorRef}>
         <SkillInput
+          label={inputLabel}
           value={query}
           onChange={(next) => {
             setQuery(next);

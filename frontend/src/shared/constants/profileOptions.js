@@ -31,20 +31,41 @@ const PROJECT_STATUS_OPTIONS = [
   { label: "Finished", value: "FINISHED" },
 ];
 
-const EDUCATION_OPTIONS = [
-  { label: "Doctorate/PhD", value: "DOCTORATE_PHD" },
-  { label: "Masters/Post-Graduation", value: "MASTERS_POST_GRADUATION" },
-  { label: "Graduation/Diploma", value: "GRADUATION_DIPLOMA" },
-  { label: "12th", value: "TWELFTH" },
-  { label: "10th", value: "TENTH" },
-  { label: "Below 10th", value: "BELOW_TENTH" },
+const EDUCATION_LABELS = {
+  DOCTORATE_PHD: "Doctorate/PhD",
+  MASTERS_POST_GRADUATION: "Masters/Post-Graduation",
+  GRADUATION_DIPLOMA: "Graduation/Diploma",
+  TWELFTH: "12th",
+  TENTH: "10th",
+  BELOW_TENTH: "Below 10th",
+};
+
+const EDUCATION_VALUE_ORDER = [
+  "DOCTORATE_PHD",
+  "MASTERS_POST_GRADUATION",
+  "GRADUATION_DIPLOMA",
+  "TWELFTH",
+  "TENTH",
+  "BELOW_TENTH",
 ];
 
-const COURSE_TYPE_OPTIONS = [
-  { label: "Full time", value: "FULL_TIME" },
-  { label: "Part time", value: "PART_TIME" },
-  { label: "Correspondence/Distance learning", value: "DISTANCE_LEARNING" },
-];
+const EDUCATION_OPTIONS = EDUCATION_VALUE_ORDER.map((value) => ({
+  value,
+  label: EDUCATION_LABELS[value],
+}));
+
+const COURSE_TYPE_LABELS = {
+  FULL_TIME: "Full time",
+  PART_TIME: "Part time",
+  DISTANCE_LEARNING: "Correspondence/Distance learning",
+};
+
+const COURSE_TYPE_VALUE_ORDER = ["FULL_TIME", "PART_TIME", "DISTANCE_LEARNING"];
+
+const COURSE_TYPE_OPTIONS = COURSE_TYPE_VALUE_ORDER.map((value) => ({
+  value,
+  label: COURSE_TYPE_LABELS[value],
+}));
 
 const MONTH_OPTIONS = [
   { label: "Jan", value: "1" },
@@ -86,16 +107,55 @@ const getLabelForValue = (value, options) => {
   return match ? match.label : value || "";
 };
 
+const toSentenceCaseWords = (value) =>
+  value
+    .toLowerCase()
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => {
+      if (/^\d+(st|nd|rd|th)$/.test(word) || /^\d+$/.test(word)) return word;
+      return `${word.charAt(0).toUpperCase()}${word.slice(1)}`;
+    })
+    .join(" ");
+
+const formatEnumLabel = (value) => {
+  if (value === null || value === undefined) return "";
+  const raw = String(value).trim();
+  if (!raw) return "";
+  return toSentenceCaseWords(raw.replace(/[_-]+/g, " "));
+};
+
+const getEducationLabel = (value) => {
+  if (value === null || value === undefined) return "";
+  const raw = String(value).trim();
+  if (!raw) return "";
+  const normalized = raw.toUpperCase();
+  return EDUCATION_LABELS[normalized] || formatEnumLabel(raw);
+};
+
+const getCourseTypeLabel = (value) => {
+  if (value === null || value === undefined) return "";
+  const raw = String(value).trim();
+  if (!raw) return "";
+  const normalized = raw.toUpperCase();
+  return COURSE_TYPE_LABELS[normalized] || formatEnumLabel(raw);
+};
+
 export {
   WORK_STATUS_OPTIONS,
   AVAILABILITY_OPTIONS,
   GENDER_OPTIONS,
   MARITAL_STATUS_OPTIONS,
   PROJECT_STATUS_OPTIONS,
+  EDUCATION_LABELS,
   EDUCATION_OPTIONS,
+  COURSE_TYPE_LABELS,
   COURSE_TYPE_OPTIONS,
   MONTH_OPTIONS,
   getYearOptions,
   mapLegacyValue,
   getLabelForValue,
+  formatEnumLabel,
+  getEducationLabel,
+  getCourseTypeLabel,
 };
